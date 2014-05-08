@@ -861,7 +861,7 @@ public class JournalConverterImpl implements JournalConverter {
 
 				element.addAttribute("name", "option" + StringUtil.randomId());
 				element.addAttribute("type", "option");
-				element.addAttribute("value", HttpUtil.decodeURL(name));
+				element.addAttribute("value", HttpUtil.decodeURL(type));
 
 				return;
 			}
