@@ -386,11 +386,7 @@ public class PDFProcessorImpl
 				File file = new File(
 					DocumentConversionUtil.getFilePath(tempFileId, "pdf"));
 
-				System.out.println(destinationFileVersion.getVersion());
-
-				if (Validator.equals(
-						"PWC", destinationFileVersion.getVersion())) {
-
+				if ("PWC".equals(destinationFileVersion.getVersion())) {
 					FileUtil.delete(file);
 				}
 
