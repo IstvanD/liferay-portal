@@ -550,19 +550,25 @@ public class ImageToolImpl implements ImageTool {
 
 	@Override
 	public RenderedImage scale(RenderedImage renderedImage, int width) {
-		if (width <= 0) {
-			return renderedImage;
-		}
 
 		int imageHeight = renderedImage.getHeight();
 		int imageWidth = renderedImage.getWidth();
+
+		BufferedImage bufferedImage = new BufferedImage(
+			imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+		bufferedImage.getGraphics().drawImage(
+			(java.awt.Image)renderedImage, 0, 0, null, null);
+
+		if (width <= 0) {
+			return bufferedImage;
+		}
 
 		double factor = (double)width / imageWidth;
 
 		int scaledHeight = (int)Math.round(factor * imageHeight);
 		int scaledWidth = width;
 
-		return doScale(renderedImage, scaledHeight, scaledWidth);
+		return doScale(bufferedImage, scaledHeight, scaledWidth);
 	}
 
 	@Override
@@ -571,6 +577,11 @@ public class ImageToolImpl implements ImageTool {
 
 		int imageHeight = renderedImage.getHeight();
 		int imageWidth = renderedImage.getWidth();
+
+		BufferedImage bufferedImage = new BufferedImage(
+			imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+		bufferedImage.getGraphics().drawImage(
+			(java.awt.Image)renderedImage, 0, 0, null, null);
 
 		if (maxHeight == 0) {
 			maxHeight = imageHeight;
@@ -581,7 +592,7 @@ public class ImageToolImpl implements ImageTool {
 		}
 
 		if ((imageHeight <= maxHeight) && (imageWidth <= maxWidth)) {
-			return renderedImage;
+			return bufferedImage;
 		}
 
 		double factor = Math.min(
@@ -590,7 +601,7 @@ public class ImageToolImpl implements ImageTool {
 		int scaledHeight = Math.max(1, (int)Math.round(factor * imageHeight));
 		int scaledWidth = Math.max(1, (int)Math.round(factor * imageWidth));
 
-		return doScale(renderedImage, scaledHeight, scaledWidth);
+		return doScale(bufferedImage, scaledHeight, scaledWidth);
 	}
 
 	@Override
