@@ -104,10 +104,6 @@ public class ViewMVCActionCommand extends BaseMVCActionCommand {
 		String fromAddress = user.getEmailAddress();
 		String fromName = user.getFullName();
 
-		Company company = themeDisplay.getCompany();
-
-		String mx = company.getMx();
-
 		InternetAddress from = new InternetAddress(fromAddress, fromName);
 
 		Layout layout = themeDisplay.getLayout();
@@ -152,6 +148,10 @@ public class ViewMVCActionCommand extends BaseMVCActionCommand {
 				"[$PORTAL_URL$]"
 			},
 			new String[] {fromAddress, fromName, layoutFullURL, portalURL});
+
+		Company company = themeDisplay.getCompany();
+
+		String mx = company.getMx();
 
 		for (String emailAddress : validEmailAddresses) {
 			InternetAddress to = new InternetAddress(emailAddress);
