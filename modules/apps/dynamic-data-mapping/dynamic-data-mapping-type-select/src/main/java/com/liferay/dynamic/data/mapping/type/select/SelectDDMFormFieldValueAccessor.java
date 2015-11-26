@@ -57,7 +57,7 @@ public class SelectDDMFormFieldValueAccessor
 		}
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setJSONFactory(JSONFactory jsonFactory) {
 		_jsonFactory = jsonFactory;
 	}
@@ -65,6 +65,6 @@ public class SelectDDMFormFieldValueAccessor
 	private static final Log _log = LogFactoryUtil.getLog(
 		SelectDDMFormFieldValueAccessor.class);
 
-	private JSONFactory _jsonFactory;
+	private volatile JSONFactory _jsonFactory;
 
 }

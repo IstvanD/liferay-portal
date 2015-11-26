@@ -178,17 +178,6 @@ public class EditMessageMVCActionCommand extends BaseMVCActionCommand {
 			   MessageBodyException | MessageSubjectException |
 			   SanitizerException e) {
 
-			UploadException uploadException =
-				(UploadException)actionRequest.getAttribute(
-					WebKeys.UPLOAD_EXCEPTION);
-
-			if (uploadException != null) {
-				String uploadExceptionRedirect = ParamUtil.getString(
-					actionRequest, "uploadExceptionRedirect");
-
-				actionResponse.sendRedirect(uploadExceptionRedirect);
-			}
-
 			if (e instanceof AntivirusScannerException) {
 				SessionErrors.add(actionRequest, e.getClass(), e);
 			}
@@ -473,8 +462,8 @@ public class EditMessageMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	private MBMessageService _mbMessageService;
-	private MBThreadLocalService _mbThreadLocalService;
-	private MBThreadService _mbThreadService;
+	private volatile MBMessageService _mbMessageService;
+	private volatile MBThreadLocalService _mbThreadLocalService;
+	private volatile MBThreadService _mbThreadService;
 
 }

@@ -57,11 +57,11 @@ public class ExportArticleMVCResourceCommand extends BaseMVCResourceCommand {
 		}
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setExportArticleUtil(ExportArticleUtil exportArticleUtil) {
 		_exportArticleUtil = exportArticleUtil;
 	}
 
-	private ExportArticleUtil _exportArticleUtil;
+	private volatile ExportArticleUtil _exportArticleUtil;
 
 }

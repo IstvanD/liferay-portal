@@ -83,11 +83,11 @@ public class DDMRESTDataProvider implements DDMDataProvider {
 		return results;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setJSONFactory(JSONFactory jsonFactory) {
 		_jsonFactory = jsonFactory;
 	}
 
-	private JSONFactory _jsonFactory;
+	private volatile JSONFactory _jsonFactory;
 
 }

@@ -159,37 +159,38 @@ public class AddRecordSetMVCActionCommand
 		return localizedMap;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDLRecordSetService(
 		DDLRecordSetService ddlRecordSetService) {
 
 		_ddlRecordSetService = ddlRecordSetService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMFormJSONDeserializer(
 		DDMFormJSONDeserializer ddmFormJSONDeserializer) {
 
 		_ddmFormJSONDeserializer = ddmFormJSONDeserializer;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMFormLayoutJSONDeserializer(
 		DDMFormLayoutJSONDeserializer ddmFormLayoutJSONDeserializer) {
 
 		_ddmFormLayoutJSONDeserializer = ddmFormLayoutJSONDeserializer;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMStructureService(
 		DDMStructureService ddmStructureService) {
 
 		_ddmStructureService = ddmStructureService;
 	}
 
-	private DDLRecordSetService _ddlRecordSetService;
-	private DDMFormJSONDeserializer _ddmFormJSONDeserializer;
-	private DDMFormLayoutJSONDeserializer _ddmFormLayoutJSONDeserializer;
-	private DDMStructureService _ddmStructureService;
+	private volatile DDLRecordSetService _ddlRecordSetService;
+	private volatile DDMFormJSONDeserializer _ddmFormJSONDeserializer;
+	private volatile DDMFormLayoutJSONDeserializer
+		_ddmFormLayoutJSONDeserializer;
+	private volatile DDMStructureService _ddmStructureService;
 
 }

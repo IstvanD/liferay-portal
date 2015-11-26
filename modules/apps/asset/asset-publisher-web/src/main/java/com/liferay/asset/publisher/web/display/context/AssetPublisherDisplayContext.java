@@ -62,7 +62,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import javax.portlet.PortletConfig;
 import javax.portlet.PortletPreferences;
@@ -150,7 +149,7 @@ public class AssetPublisherDisplayContext {
 				_allAssetTagNames, assetTagName);
 		}
 
-		if (isMergeURLTags() || isMergeLayoutTags()) {
+		if (isMergeURLTags()) {
 			_allAssetTagNames = ArrayUtil.append(
 				_allAssetTagNames, getCompilerTagNames());
 		}
@@ -235,7 +234,7 @@ public class AssetPublisherDisplayContext {
 			SearchContainer searchContainer)
 		throws Exception {
 
-		if (!showAssetEntryResults()) {
+		if (!isShowAssetEntryResults()) {
 			return Collections.emptyList();
 		}
 
@@ -303,16 +302,6 @@ public class AssetPublisherDisplayContext {
 
 		if (isMergeURLTags()) {
 			_compilerTagNames = ParamUtil.getParameterValues(_request, "tags");
-		}
-
-		if (isMergeLayoutTags()) {
-			Set<String> layoutTagNames = AssetUtil.getLayoutTagNames(_request);
-
-			if (!layoutTagNames.isEmpty()) {
-				_compilerTagNames = ArrayUtil.append(
-					_compilerTagNames,
-					layoutTagNames.toArray(new String[layoutTagNames.size()]));
-			}
 		}
 
 		return _compilerTagNames;
@@ -826,15 +815,6 @@ public class AssetPublisherDisplayContext {
 		return _excludeZeroViewCount;
 	}
 
-	public boolean isMergeLayoutTags() {
-		if (_mergeLayoutTags == null) {
-			_mergeLayoutTags = GetterUtil.getBoolean(
-				_portletPreferences.getValue("mergeLayoutTags", null), false);
-		}
-
-		return _mergeLayoutTags;
-	}
-
 	public boolean isMergeURLTags() {
 		if (_mergeURLTags == null) {
 			_mergeURLTags = GetterUtil.getBoolean(
@@ -1334,6 +1314,20 @@ public class AssetPublisherDisplayContext {
 		return false;
 	}
 
+	protected boolean isShowAssetEntryResults() throws Exception {
+		AssetEntryQuery assetEntryQuery = getAssetEntryQuery();
+
+		String portletName = getPortletName();
+
+		if (!portletName.equals(AssetPublisherPortletKeys.RELATED_ASSETS) ||
+			(assetEntryQuery.getLinkedAssetEntryId() > 0)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	protected void setDDMStructure() throws Exception {
 		ThemeDisplay themeDisplay = (ThemeDisplay)_request.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -1385,20 +1379,6 @@ public class AssetPublisherDisplayContext {
 		}
 	}
 
-	protected boolean showAssetEntryResults() throws Exception {
-		AssetEntryQuery assetEntryQuery = getAssetEntryQuery();
-
-		String portletName = getPortletName();
-
-		if (!portletName.equals(AssetPublisherPortletKeys.RELATED_ASSETS) ||
-			(assetEntryQuery.getLinkedAssetEntryId() > 0)) {
-
-			return true;
-		}
-
-		return false;
-	}
-
 	private Integer _abstractLength;
 	private long[] _allAssetCategoryIds;
 	private String[] _allAssetTagNames;
@@ -1432,7 +1412,6 @@ public class AssetPublisherDisplayContext {
 	private Boolean _excludeZeroViewCount;
 	private String[] _extensions;
 	private long[] _groupIds;
-	private Boolean _mergeLayoutTags;
 	private Boolean _mergeURLTags;
 	private String[] _metadataFields;
 	private Boolean _openOfficeServerEnabled;

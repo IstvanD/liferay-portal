@@ -100,13 +100,13 @@ public class CopyTemplateMVCActionCommand extends DDMBaseMVCActionCommand {
 		return portletURL.toString();
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMTemplateService(
 		DDMTemplateService ddmTemplateService) {
 
 		_ddmTemplateService = ddmTemplateService;
 	}
 
-	private DDMTemplateService _ddmTemplateService;
+	private volatile DDMTemplateService _ddmTemplateService;
 
 }

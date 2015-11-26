@@ -30,6 +30,8 @@ import org.osgi.service.component.annotations.Reference;
 	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
+		"com.liferay.portlet.application-type=full-page-application",
+		"com.liferay.portlet.application-type=widget",
 		"com.liferay.portlet.css-class-wrapper=portlet-wiki",
 		"com.liferay.portlet.display-category=category.wiki",
 		"com.liferay.portlet.header-portlet-css=/wiki/css/main.css",
@@ -60,7 +62,8 @@ import org.osgi.service.component.annotations.Reference;
 public class WikiPortlet extends MVCPortlet {
 
 	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.wiki.web)(release.schema.version=1.0.0))"
+		target = "(&(release.bundle.symbolic.name=com.liferay.wiki.web)(release.schema.version=1.0.0))",
+		unbind = "-"
 	)
 	protected void setRelease(Release release) {
 	}

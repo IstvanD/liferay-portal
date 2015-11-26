@@ -153,7 +153,7 @@ public class ExportLayoutsMVCActionCommand extends BaseMVCActionCommand {
 			new ArrayList<Layout>(layouts));
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setExportImportConfigurationLocalService(
 		ExportImportConfigurationLocalService
 			exportImportConfigurationLocalService) {
@@ -162,14 +162,14 @@ public class ExportLayoutsMVCActionCommand extends BaseMVCActionCommand {
 			exportImportConfigurationLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setExportImportService(
 		ExportImportService exportImportService) {
 
 		_exportImportService = exportImportService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setLayoutLocalService(
 		LayoutLocalService layoutLocalService) {
 
@@ -179,9 +179,9 @@ public class ExportLayoutsMVCActionCommand extends BaseMVCActionCommand {
 	private static final Log _log = LogFactoryUtil.getLog(
 		ExportLayoutsMVCActionCommand.class);
 
-	private ExportImportConfigurationLocalService
+	private volatile ExportImportConfigurationLocalService
 		_exportImportConfigurationLocalService;
-	private ExportImportService _exportImportService;
-	private LayoutLocalService _layoutLocalService;
+	private volatile ExportImportService _exportImportService;
+	private volatile LayoutLocalService _layoutLocalService;
 
 }

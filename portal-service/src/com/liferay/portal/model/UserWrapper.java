@@ -574,6 +574,7 @@ public class UserWrapper implements User, ModelWrapper<User> {
 	intranet(versus extranet)  site home page, if no friendly URL
 	is available for the user's profile
 	* @return the user's display URL
+	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link #getDisplayURL(ThemeDisplay)}
 	*/
 	@Deprecated
@@ -644,6 +645,7 @@ public class UserWrapper implements User, ModelWrapper<User> {
 	intranet (versus extranet) site home page, if no friendly URL is
 	available for the user's profile
 	* @return the user's display URL
+	* @throws PortalException
 	*/
 	@Override
 	public java.lang.String getDisplayURL(
@@ -788,6 +790,11 @@ public class UserWrapper implements User, ModelWrapper<User> {
 	@Override
 	public java.util.List<com.liferay.portal.model.Group> getGroups() {
 		return _user.getGroups();
+	}
+
+	@Override
+	public java.lang.String getInitials() {
+		return _user.getInitials();
 	}
 
 	/**

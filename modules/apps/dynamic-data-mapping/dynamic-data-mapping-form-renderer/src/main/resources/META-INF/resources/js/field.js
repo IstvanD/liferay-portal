@@ -180,6 +180,20 @@ AUI.add(
 						).join('');
 					},
 
+					getContextValue: function() {
+						var instance = this;
+
+						var value = instance.getLocalizedValue(instance.get('value'));
+
+						var predefinedValue = instance.get('predefinedValue');
+
+						if (!value && predefinedValue) {
+							value = instance.getLocalizedValue(predefinedValue);
+						}
+
+						return value;
+					},
+
 					getInputNode: function() {
 						var instance = this;
 
@@ -278,19 +292,14 @@ AUI.add(
 							}
 						);
 
-						var value = instance.get('value');
-
-						if (instance.get('localizable') && Lang.isObject(value)) {
-							value = value[instance.get('locale')];
-						}
-
 						return A.merge(
 							context,
 							{
 								childElementsHTML: instance.getChildElementsHTML(),
 								label: instance.getLabel(),
 								name: instance.getQualifiedName(),
-								value: value || '',
+								readOnly: instance.get('readOnly'),
+								value: instance.getContextValue() || '',
 								visible: instance.get('visible')
 							}
 						);
@@ -359,7 +368,7 @@ AUI.add(
 							value: instance.getSerializedValue()
 						};
 
-						var fields = instance.get('fields');
+						var fields = instance.getImmediateFields();
 
 						if (fields.length > 0) {
 							fieldJSON.nestedFieldValues = AArray.invoke(fields, 'toJSON');
@@ -454,9 +463,13 @@ AUI.add(
 						var value = '';
 
 						if (instance.get('localizable')) {
-							value = {};
+							value = instance.get('predefinedValue');
 
-							value[instance.get('locale')] = '';
+							if (!Lang.isObject(value)) {
+								value = {};
+
+								value[instance.get('locale')] = '';
+							}
 						}
 
 						return value;

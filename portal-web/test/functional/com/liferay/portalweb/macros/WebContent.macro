@@ -368,21 +368,14 @@
 	</command>
 
 	<command name="addWithCategoryCP">
-		<execute function="Type" locator1="TextInput#TITLE" value1="${webContentTitle}" />
-		<execute function="Type#typeAlloyEditor" locator1="AlloyEditor#CONTENT_FIELD" value1="${webContentContent}" />
-		<execute function="AssertClick" locator1="NavListItem#CATEGORIZATION" value1="Categorization" />
+		<execute macro="WebContent#addCP">
+			<var name="webContentContent" value="${webContentContent}" />
+			<var name="webContentTitle" value="${webContentTitle}" />
+		</execute>
 
-		<if>
-			<isset var="userSegmentDetailTitle" />
-			<then>
-				<var name="key_userSegmentDetailTitle" value="${userSegmentDetailTitle}" />
-
-				<execute function="AssertTextEquals" locator1="WCEditWebContent#USER_SEGMENT_DETAIL_TITLE" value1="${userSegmentDetailTitle}" />
-			</then>
-		</if>
-
-		<execute macro="AssetCategorization#addCategory">
+		<execute macro="WebContent#selectCategory">
 			<var name="categoryName" value="${categoryName}" />
+			<var name="userSegmentDetailTitle" value="${userSegmentDetailTitle}" />
 			<var name="vocabularyName" value="${vocabularyName}" />
 		</execute>
 
@@ -704,7 +697,7 @@
 
 		<execute function="Check" locator1="WC#ENTRY_DESCRIPTIVE_CHECKBOX" />
 
-		<var name="key_descriptiveEntry" value="${webContentTitle}" />
+		<var name="key_assetEntry" value="${webContentTitle}" />
 
 		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
 		<execute function="AssertClick" locator1="MenuItem#COPY" value1="Copy" />
@@ -712,8 +705,10 @@
 		<execute function="AssertClick" locator1="Button#COPY" value1="Copy" />
 		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
 
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Web Content" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Web Content" />
 		</execute>
 
 		<execute macro="WebContent#viewTitle">
@@ -735,21 +730,25 @@
 			<var name="webContentTitleEscapeCharacter" value="${webContentTitleEscapeCharacter}" />
 		</execute>
 
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Recycle Bin" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Recycle Bin" />
 		</execute>
 
 		<execute macro="RecycleBin#emptyCP" />
 
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Web Content" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Web Content" />
 		</execute>
 
 		<execute function="AssertTextNotPresent" value1="${webContentTitle}" />
 	</command>
 
 	<command name="deleteWithDisabledRB">
-		<var name="key_descriptiveEntry" value="${entryTitle}" />
+		<var name="key_assetEntry" value="${entryTitle}" />
 
 		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
 
@@ -914,7 +913,7 @@
 	</command>
 
 	<command name="expireSpecificVersionCP">
-		<var name="key_descriptiveEntry" value="${webContentTitle}" />
+		<var name="key_assetEntry" value="${webContentTitle}" />
 
 		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
 
@@ -1061,6 +1060,24 @@
 		<execute function="AssertTextPresent" locator1="WC#SEARCH_TITLE" value1="${webContentTitle}" />
 	</command>
 
+	<command name="selectCategory">
+		<execute function="AssertClick" locator1="NavListItem#CATEGORIZATION" value1="Categorization" />
+
+		<if>
+			<isset var="userSegmentDetailTitle" />
+			<then>
+				<var name="key_userSegmentDetailTitle" value="${userSegmentDetailTitle}" />
+
+				<execute function="AssertTextEquals" locator1="WCEditWebContent#USER_SEGMENT_DETAIL_TITLE" value1="${userSegmentDetailTitle}" />
+			</then>
+		</if>
+
+		<execute macro="AssetCategorization#addCategory">
+			<var name="categoryName" value="${categoryName}" />
+			<var name="vocabularyName" value="${vocabularyName}" />
+		</execute>
+	</command>
+
 	<command name="selectTemplateCP">
 		<execute function="AssertClick" locator1="WCEditWebContent#SELECT_TEMPLATE" value1="Select" />
 
@@ -1074,8 +1091,10 @@
 	</command>
 
 	<command name="tearDownCP">
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Web Content" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Web Content" />
 		</execute>
 
 		<execute macro="Portlet#changeDisplayStyle">
@@ -1091,8 +1110,10 @@
 			</then>
 		</while>
 
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Recycle Bin" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Recycle Bin" />
 		</execute>
 
 		<execute macro="RecycleBin#emptyCP" />
@@ -1389,7 +1410,7 @@
 		<execute function="AssertClick" locator1="AP#ASSET_ABSTRACT_TITLE" value1="${webContentTitle}" />
 
 		<execute function="AssertTextEquals" locator1="APAsset#ASSET_TITLE_HEADER" value1="${webContentTitle}" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="APAsset#ASSET_CONTENT" value1="${webContentContent}" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="APAsset#ASSET_VIEW_CONTENT" value1="${webContentContent}" />
 	</command>
 
 	<command name="viewPGViaWCD">

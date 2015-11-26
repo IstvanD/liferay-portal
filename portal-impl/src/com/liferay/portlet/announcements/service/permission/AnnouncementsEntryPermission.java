@@ -94,9 +94,8 @@ public class AnnouncementsEntryPermission {
 	}
 
 	public static boolean contains(
-			PermissionChecker permissionChecker, Layout layout, String name,
-			String actionId)
-		throws PortalException {
+		PermissionChecker permissionChecker, Layout layout, String name,
+		String actionId) {
 
 		if (layout instanceof VirtualLayout) {
 			VirtualLayout virtualLayout = (VirtualLayout)layout;
@@ -122,9 +121,8 @@ public class AnnouncementsEntryPermission {
 	}
 
 	public static boolean contains(
-			PermissionChecker permissionChecker, long plid, String name,
-			String actionId)
-		throws PortalException {
+		PermissionChecker permissionChecker, long plid, String name,
+		String actionId) {
 
 		Layout layout = LayoutLocalServiceUtil.fetchLayout(plid);
 

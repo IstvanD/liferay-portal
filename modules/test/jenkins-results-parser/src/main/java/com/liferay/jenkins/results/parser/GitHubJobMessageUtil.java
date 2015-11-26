@@ -15,10 +15,6 @@
 package com.liferay.jenkins.results.parser;
 
 import java.io.File;
-import java.io.IOException;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -147,7 +143,8 @@ public class GitHubJobMessageUtil {
 			sb.append("<p>0 Tests Passed.<br />1 Test Failed.</p>");
 			sb.append("<pre>");
 
-			String javacOutputFileContent = _read(javacOutputFile);
+			String javacOutputFileContent = JenkinsResultsParserUtil.read(
+				javacOutputFile);
 
 			if (javacOutputFileContent.length() > 5000) {
 				javacOutputFileContent = javacOutputFileContent.substring(
@@ -159,10 +156,6 @@ public class GitHubJobMessageUtil {
 		}
 
 		project.setProperty("report.html.content", sb.toString());
-	}
-
-	private static String _read(File file) throws IOException {
-		return new String(Files.readAllBytes(Paths.get(file.toURI())));
 	}
 
 }

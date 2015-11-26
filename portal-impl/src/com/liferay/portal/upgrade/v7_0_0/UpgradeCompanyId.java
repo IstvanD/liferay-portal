@@ -71,7 +71,8 @@ public class UpgradeCompanyId
 					{"BookmarksFolder", "folderId"}, {"BlogsEntry", "entryId"},
 					{"CalendarBooking", "calendarBookingId"},
 					{"DDLRecord", "recordId"}, {"DLFileEntry", "fileEntryId"},
-					{"DLFolder", "folderId"}, {"JournalArticle", "articleId"},
+					{"DLFolder", "folderId"},
+					{"JournalArticle", "resourcePrimKey"},
 					{"JournalFolder", "folderId"},
 					{"MBDiscussion", "discussionId"},
 					{"MBMessage", "messageId"}, {"WikiPage", "pageId"}
@@ -87,7 +88,7 @@ public class UpgradeCompanyId
 				"productEntryId"),
 			new TableUpdater("TrashVersion", "TrashEntry", "entryId"),
 			new TableUpdater("UserGroupGroupRole", "UserGroup", "userGroupId"),
-			new TableUpdater("UserGroupRole", "UserGroup", "userGroupId"),
+			new TableUpdater("UserGroupRole", "User_", "userId"),
 			new TableUpdater("UserGroups_Teams", "UserGroup", "userGroupId"),
 			new TableUpdater("UserIdMapper", "User_", "userId"),
 			new TableUpdater("Users_Groups", "User_", "userId"),
@@ -147,7 +148,7 @@ public class UpgradeCompanyId
 			// Group
 
 			selectSQL =
-				"select companyId from Group_ where Group_.organizationId = " +
+				"select companyId from Group_ where Group_.groupId = " +
 					"PortletPreferences.ownerId";
 
 			runSQL(getUpdateSQL(selectSQL));

@@ -43,14 +43,14 @@ public class CheckboxDDMFormFieldValueRenderer
 		}
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setCheckboxDDMFormFieldValueAccessor(
 		CheckboxDDMFormFieldValueAccessor checkBoxDDMFormFieldValueAccessor) {
 
 		_checkboxDDMFormFieldValueAccessor = checkBoxDDMFormFieldValueAccessor;
 	}
 
-	private CheckboxDDMFormFieldValueAccessor
+	private volatile CheckboxDDMFormFieldValueAccessor
 		_checkboxDDMFormFieldValueAccessor;
 
 }

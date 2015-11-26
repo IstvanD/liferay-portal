@@ -15,8 +15,8 @@
 package com.liferay.portal.util;
 
 /**
- * @author Brian Wing Shun Chan
- * @author Brian Myunghun Kim
+ * @author     Brian Wing Shun Chan
+ * @author     Brian Myunghun Kim
  * @deprecated As of 7.0.0, moved to {@link
  *             com.liferay.portal.kernel.util.WebKeys}
  */

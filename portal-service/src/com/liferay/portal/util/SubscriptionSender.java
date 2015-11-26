@@ -493,6 +493,9 @@ public class SubscriptionSender implements Serializable {
 		return hasPermission(subscription, _className, _classPK, user);
 	}
 
+	/**
+	 * @throws PortalException
+	 */
 	protected Boolean hasSubscribePermission(
 			PermissionChecker permissionChecker, Subscription subscription)
 		throws PortalException {

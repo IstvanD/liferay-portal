@@ -128,21 +128,21 @@ public class RenderStructureFieldMVCRenderCommand
 		return ddmFormFieldsMap.get(fieldName);
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMFormFieldRendererRegistry(
 		DDMFormFieldRendererRegistry ddmFormFieldRendererRegistry) {
 
 		_ddmFormFieldRendererRegistry = ddmFormFieldRendererRegistry;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMFormJSONDeserializer(
 		DDMFormJSONDeserializer ddmFormJSONDeserializer) {
 
 		_ddmFormJSONDeserializer = ddmFormJSONDeserializer;
 	}
 
-	private DDMFormFieldRendererRegistry _ddmFormFieldRendererRegistry;
-	private DDMFormJSONDeserializer _ddmFormJSONDeserializer;
+	private volatile DDMFormFieldRendererRegistry _ddmFormFieldRendererRegistry;
+	private volatile DDMFormJSONDeserializer _ddmFormJSONDeserializer;
 
 }

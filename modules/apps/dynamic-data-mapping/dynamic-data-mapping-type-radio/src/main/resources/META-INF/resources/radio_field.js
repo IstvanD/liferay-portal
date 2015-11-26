@@ -1,8 +1,6 @@
 AUI.add(
 	'liferay-ddm-form-field-radio',
 	function(A) {
-		var Lang = A.Lang;
-
 		var RadioField = A.Component.create(
 			{
 				ATTRS: {
@@ -28,15 +26,9 @@ AUI.add(
 					getContextValue: function() {
 						var instance = this;
 
-						var value = instance.getLocalizedValue(instance.get('value'));
+						var value = RadioField.superclass.getContextValue.apply(instance, arguments);
 
-						var predefinedValue = instance.get('predefinedValue');
-
-						if (!value && predefinedValue) {
-							value = instance.getLocalizedValue(predefinedValue);
-						}
-
-						if (!Lang.isArray(value)) {
+						if (!Array.isArray(value)) {
 							try {
 								value = JSON.parse(value);
 							}
@@ -138,7 +130,7 @@ AUI.add(
 
 						RadioField.superclass._renderErrorMessage.apply(instance, arguments);
 
-						container.all('.validation-message').appendTo(container.one('.form-group'));
+						container.all('.help-block').appendTo(container.one('.form-group'));
 					},
 
 					_showFeedback: function() {

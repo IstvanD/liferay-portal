@@ -48,8 +48,8 @@ PortletURL portletURL = renderResponse.createRenderURL();
 
 <c:if test='<%= (totalVar > 0) || !navigation.equals("all") %>'>
 	<liferay-frontend:management-bar
-		checkBoxContainerId="layoutPrototypeSearchContainer"
 		includeCheckBox="<%= true %>"
+		searchContainerId="layoutPrototype"
 	>
 		<liferay-frontend:management-bar-filters>
 			<liferay-frontend:management-bar-navigation
@@ -81,7 +81,7 @@ PortletURL portletURL = renderResponse.createRenderURL();
 
 <aui:form cssClass="container-fluid-1280" name="fm">
 	<liferay-ui:search-container
-		emptyResultsMessage="there-are-no-page-templates.-you-can-add-a-page-template-by-clicking-the-plus-button-on-the-right-bottom-corner"
+		emptyResultsMessage="there-are-no-page-templates.-you-can-add-a-page-template-by-clicking-the-plus-button-on-the-bottom-right-corner"
 		headerNames="name"
 		id="layoutPrototype"
 		iteratorURL="<%= portletURL %>"

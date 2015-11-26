@@ -49,21 +49,13 @@ public class OrganizationLocalServiceUtil {
 		getService().addGroupOrganization(groupId, organizationId);
 	}
 
-	/**
-	* @throws PortalException
-	*/
 	public static void addGroupOrganizations(long groupId,
-		java.util.List<com.liferay.portal.model.Organization> Organizations)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		java.util.List<com.liferay.portal.model.Organization> Organizations) {
 		getService().addGroupOrganizations(groupId, Organizations);
 	}
 
-	/**
-	* @throws PortalException
-	*/
 	public static void addGroupOrganizations(long groupId,
-		long[] organizationIds)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long[] organizationIds) {
 		getService().addGroupOrganizations(groupId, organizationIds);
 	}
 
@@ -484,6 +476,10 @@ public class OrganizationLocalServiceUtil {
 		long groupId, long userId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getGroupUserOrganizations(groupId, userId);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery getIndexableActionableDynamicQuery() {
+		return getService().getIndexableActionableDynamicQuery();
 	}
 
 	public static java.util.List<com.liferay.portal.model.Organization> getNoAssetOrganizations() {
@@ -1300,12 +1296,8 @@ public class OrganizationLocalServiceUtil {
 			end, sort);
 	}
 
-	/**
-	* @throws PortalException
-	*/
 	public static void setGroupOrganizations(long groupId,
-		long[] organizationIds)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long[] organizationIds) {
 		getService().setGroupOrganizations(groupId, organizationIds);
 	}
 
@@ -1320,8 +1312,7 @@ public class OrganizationLocalServiceUtil {
 	* @param organizationIds the primary keys of the organizations
 	*/
 	public static void unsetGroupOrganizations(long groupId,
-		long[] organizationIds)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long[] organizationIds) {
 		getService().unsetGroupOrganizations(groupId, organizationIds);
 	}
 

@@ -16,9 +16,12 @@ package com.liferay.portal.ldap.configuration;
 
 import aQute.bnd.annotation.metatype.Meta;
 
+import com.liferay.configuration.admin.ConfigurationAdmin;
+
 /**
  * @author Michael C. Han
  */
+@ConfigurationAdmin(category = "platform")
 @Meta.OCD(
 	factory = true,
 	id = "com.liferay.portal.ldap.configuration.LDAPServerConfiguration",
@@ -61,6 +64,9 @@ public interface LDAPServerConfiguration {
 
 	@Meta.AD(deflt = "(objectClass=groupOfUniqueNames)", required = false)
 	public String groupSearchFilter();
+
+	@Meta.AD(deflt = "true", required = false)
+	public boolean groupSearchFilterEnabled();
 
 	@Meta.AD(deflt = "0", required = false)
 	public long ldapServerId();

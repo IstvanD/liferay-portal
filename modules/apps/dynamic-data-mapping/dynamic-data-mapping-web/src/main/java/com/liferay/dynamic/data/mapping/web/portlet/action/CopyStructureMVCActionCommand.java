@@ -149,21 +149,21 @@ public class CopyStructureMVCActionCommand extends DDMBaseMVCActionCommand {
 		return portletURL.toString();
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMStructureService(
 		DDMStructureService ddmStructureService) {
 
 		_ddmStructureService = ddmStructureService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMTemplateService(
 		DDMTemplateService ddmTemplateService) {
 
 		_ddmTemplateService = ddmTemplateService;
 	}
 
-	private DDMStructureService _ddmStructureService;
-	private DDMTemplateService _ddmTemplateService;
+	private volatile DDMStructureService _ddmStructureService;
+	private volatile DDMTemplateService _ddmTemplateService;
 
 }

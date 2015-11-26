@@ -287,6 +287,7 @@ public class UserImpl extends UserBaseImpl {
 	 *             intranet(versus extranet)  site home page, if no friendly URL
 	 *             is available for the user's profile
 	 * @return     the user's display URL
+	 * @throws     PortalException
 	 * @deprecated As of 7.0.0, replaced by {@link #getDisplayURL(ThemeDisplay)}
 	 */
 	@Deprecated
@@ -369,6 +370,7 @@ public class UserImpl extends UserBaseImpl {
 	 *         intranet (versus extranet) site home page, if no friendly URL is
 	 *         available for the user's profile
 	 * @return the user's display URL
+	 * @throws PortalException
 	 */
 	@Override
 	public String getDisplayURL(
@@ -485,6 +487,19 @@ public class UserImpl extends UserBaseImpl {
 	@Override
 	public List<Group> getGroups() {
 		return GroupLocalServiceUtil.getUserGroups(getUserId());
+	}
+
+	@Override
+	public String getInitials() {
+		String[] names = StringUtil.split(getFullName(), StringPool.SPACE);
+
+		StringBundler sb = new StringBundler(names.length);
+
+		for (String name : names) {
+			sb.append(StringUtil.toUpperCase(StringUtil.shorten(name, 1)));
+		}
+
+		return sb.toString();
 	}
 
 	@Override

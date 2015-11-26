@@ -69,13 +69,14 @@ public class SelectDDMFormFieldValueRenderer
 		return ddmFormField.getDDMFormFieldOptions();
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setSelectDDMFormFieldValueAccessor(
 		SelectDDMFormFieldValueAccessor selectDDMFormFieldValueAccessor) {
 
 		_selectDDMFormFieldValueAccessor = selectDDMFormFieldValueAccessor;
 	}
 
-	private SelectDDMFormFieldValueAccessor _selectDDMFormFieldValueAccessor;
+	private volatile SelectDDMFormFieldValueAccessor
+		_selectDDMFormFieldValueAccessor;
 
 }

@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
  * @author Julio Camarero
  */
 public class PublicRenderParameters extends HashMap<String, String[]> {

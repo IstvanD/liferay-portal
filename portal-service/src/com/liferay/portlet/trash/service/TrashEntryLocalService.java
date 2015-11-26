@@ -104,7 +104,7 @@ public interface TrashEntryLocalService extends BaseLocalService,
 	* @return the trash entry with the entity class name and primary key
 	*/
 	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(
-		java.lang.String className, long classPK) throws PortalException;
+		java.lang.String className, long classPK);
 
 	/**
 	* Deletes the trash entry with the primary key.
@@ -112,8 +112,7 @@ public interface TrashEntryLocalService extends BaseLocalService,
 	* @param entryId the primary key of the trash entry
 	* @return the trash entry with the primary key
 	*/
-	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(long entryId)
-		throws PortalException;
+	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(long entryId);
 
 	@com.liferay.portal.kernel.search.Indexable(type = IndexableType.DELETE)
 	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(
@@ -313,6 +312,9 @@ public interface TrashEntryLocalService extends BaseLocalService,
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public com.liferay.portlet.trash.model.TrashEntry getEntry(long entryId)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
 	/**
 	* Returns the OSGi service identifier.

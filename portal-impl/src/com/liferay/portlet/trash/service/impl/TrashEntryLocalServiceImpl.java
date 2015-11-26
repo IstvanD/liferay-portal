@@ -15,7 +15,7 @@
 package com.liferay.portlet.trash.service.impl;
 
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
-import com.liferay.portal.kernel.dao.orm.BaseActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -169,7 +169,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 
 			});
 		actionableDynamicQuery.setTransactionAttribute(
-			BaseActionableDynamicQuery.REQUIRES_NEW_TRANSACTION_ATTRIBUTE);
+			DefaultActionableDynamicQuery.REQUIRES_NEW_TRANSACTION_ATTRIBUTE);
 
 		actionableDynamicQuery.performActions();
 	}
@@ -190,7 +190,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 	 * @return the trash entry with the primary key
 	 */
 	@Override
-	public TrashEntry deleteEntry(long entryId) throws PortalException {
+	public TrashEntry deleteEntry(long entryId) {
 		TrashEntry entry = trashEntryPersistence.fetchByPrimaryKey(entryId);
 
 		return deleteEntry(entry);
@@ -204,9 +204,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 	 * @return the trash entry with the entity class name and primary key
 	 */
 	@Override
-	public TrashEntry deleteEntry(String className, long classPK)
-		throws PortalException {
-
+	public TrashEntry deleteEntry(String className, long classPK) {
 		long classNameId = classNameLocalService.getClassNameId(className);
 
 		TrashEntry entry = trashEntryPersistence.fetchByC_C(

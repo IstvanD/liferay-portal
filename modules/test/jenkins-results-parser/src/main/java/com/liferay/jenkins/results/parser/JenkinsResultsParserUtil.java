@@ -15,9 +15,15 @@
 package com.liferay.jenkins.results.parser;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 import java.net.URL;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -203,6 +209,10 @@ public class JenkinsResultsParserUtil {
 		return remoteURL;
 	}
 
+	public static String read(File file) throws IOException {
+		return new String(Files.readAllBytes(Paths.get(file.toURI())));
+	}
+
 	public static JSONObject toJSONObject(String url) throws Exception {
 		return toJSONObject(url, true);
 	}
@@ -232,31 +242,49 @@ public class JenkinsResultsParserUtil {
 			return _toStringCache.get(key);
 		}
 
-		System.out.println("Downloading " + url);
+		int retries = 0;
 
-		StringBuilder sb = new StringBuilder();
+		while (true) {
+			try {
+				System.out.println("Downloading " + url);
 
-		URL urlObject = new URL(url);
+				StringBuilder sb = new StringBuilder();
 
-		InputStreamReader inputStreamReader = new InputStreamReader(
-			urlObject.openStream());
+				URL urlObject = new URL(url);
 
-		BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+				InputStreamReader inputStreamReader = new InputStreamReader(
+					urlObject.openStream());
 
-		String line = null;
+				BufferedReader bufferedReader = new BufferedReader(
+					inputStreamReader);
 
-		while ((line = bufferedReader.readLine()) != null) {
-			sb.append(line);
-			sb.append("\n");
+				String line = null;
+
+				while ((line = bufferedReader.readLine()) != null) {
+					sb.append(line);
+					sb.append("\n");
+				}
+
+				bufferedReader.close();
+
+				if (!url.startsWith("file:")) {
+					_toStringCache.put(key, sb.toString());
+				}
+
+				return sb.toString();
+			}
+			catch (FileNotFoundException fnfe) {
+				retries++;
+
+				if (retries > 3) {
+					throw fnfe;
+				}
+
+				System.out.println("Retry in 5 seconds");
+
+				Thread.sleep(5000);
+			}
 		}
-
-		bufferedReader.close();
-
-		if (!url.startsWith("file:")) {
-			_toStringCache.put(key, sb.toString());
-		}
-
-		return sb.toString();
 	}
 
 	private static final Pattern _localURLPattern1 = Pattern.compile(

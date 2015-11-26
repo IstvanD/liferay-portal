@@ -131,7 +131,8 @@ public class ControlPanelLayoutTypeController
 	}
 
 	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.control.panel)"
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.control.panel)",
+		unbind = "-"
 	)
 	protected void setServletContext(ServletContext servletContext) {
 		this.servletContext = servletContext;
@@ -145,7 +146,7 @@ public class ControlPanelLayoutTypeController
 
 	private static final String _VIEW_PAGE = "/layout/view/control_panel.jsp";
 
-	private PanelAppRegistry _panelAppRegistry;
-	private PanelCategoryRegistry _panelCategoryRegistry;
+	private volatile PanelAppRegistry _panelAppRegistry;
+	private volatile PanelCategoryRegistry _panelCategoryRegistry;
 
 }

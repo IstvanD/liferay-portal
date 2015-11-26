@@ -103,12 +103,12 @@ public class DDLPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	public void setDDLRecordService(DDLRecordService ddlRecordService) {
 		_ddlRecordService = ddlRecordService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	public void setDDLRecordSetService(
 		DDLRecordSetService ddlRecordSetService) {
 
@@ -169,7 +169,7 @@ public class DDLPortlet extends MVCPortlet {
 
 	private static final Log _log = LogFactoryUtil.getLog(DDLPortlet.class);
 
-	private DDLRecordService _ddlRecordService;
-	private DDLRecordSetService _ddlRecordSetService;
+	private volatile DDLRecordService _ddlRecordService;
+	private volatile DDLRecordSetService _ddlRecordSetService;
 
 }

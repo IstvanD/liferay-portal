@@ -280,21 +280,21 @@ public class StagedAssetLinkStagedModelDataHandler
 		return uuid.substring(uuid.indexOf(StringPool.POUND) + 1);
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setAssetEntryLocalService(
 		AssetEntryLocalService assetEntryLocalService) {
 
 		_assetEntryLocalService = assetEntryLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setAssetLinkLocalService(
 		AssetLinkLocalService assetLinkLocalService) {
 
 		_assetLinkLocalService = assetLinkLocalService;
 	}
 
-	private AssetEntryLocalService _assetEntryLocalService;
-	private AssetLinkLocalService _assetLinkLocalService;
+	private volatile AssetEntryLocalService _assetEntryLocalService;
+	private volatile AssetLinkLocalService _assetLinkLocalService;
 
 }

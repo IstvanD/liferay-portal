@@ -104,9 +104,7 @@ public class OrganizationLocalServiceImpl
 	 * @param organizationIds the primary keys of the organizations
 	 */
 	@Override
-	public void addGroupOrganizations(long groupId, long[] organizationIds)
-		throws PortalException {
-
+	public void addGroupOrganizations(long groupId, long[] organizationIds) {
 		groupPersistence.addOrganizations(groupId, organizationIds);
 
 		PermissionCacheUtil.clearCache();
@@ -1604,9 +1602,7 @@ public class OrganizationLocalServiceImpl
 	 * @param organizationIds the primary keys of the organizations
 	 */
 	@Override
-	public void setGroupOrganizations(long groupId, long[] organizationIds)
-		throws PortalException {
-
+	public void setGroupOrganizations(long groupId, long[] organizationIds) {
 		groupPersistence.setOrganizations(groupId, organizationIds);
 
 		PermissionCacheUtil.clearCache();
@@ -1619,9 +1615,7 @@ public class OrganizationLocalServiceImpl
 	 * @param organizationIds the primary keys of the organizations
 	 */
 	@Override
-	public void unsetGroupOrganizations(long groupId, long[] organizationIds)
-		throws PortalException {
-
+	public void unsetGroupOrganizations(long groupId, long[] organizationIds) {
 		groupPersistence.removeOrganizations(groupId, organizationIds);
 
 		PermissionCacheUtil.clearCache();

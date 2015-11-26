@@ -290,14 +290,14 @@ public class ExportImportMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDLFileEntryLocalService(
 		DLFileEntryLocalService dlFileEntryLocalService) {
 
 		_dlFileEntryLocalService = dlFileEntryLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setExportImportConfigurationLocalService(
 		ExportImportConfigurationLocalService
 			exportImportConfigurationLocalService) {
@@ -306,14 +306,14 @@ public class ExportImportMVCActionCommand extends BaseMVCActionCommand {
 			exportImportConfigurationLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setExportImportService(
 		ExportImportService exportImportService) {
 
 		_exportImportService = exportImportService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setImportLayoutsMVCActionCommand(
 		ImportLayoutsMVCActionCommand importLayoutsMVCActionCommand) {
 
@@ -401,10 +401,11 @@ public class ExportImportMVCActionCommand extends BaseMVCActionCommand {
 	private static final Log _log = LogFactoryUtil.getLog(
 		ExportImportMVCActionCommand.class);
 
-	private DLFileEntryLocalService _dlFileEntryLocalService;
-	private ExportImportConfigurationLocalService
+	private volatile DLFileEntryLocalService _dlFileEntryLocalService;
+	private volatile ExportImportConfigurationLocalService
 		_exportImportConfigurationLocalService;
-	private ExportImportService _exportImportService;
-	private ImportLayoutsMVCActionCommand _importLayoutsMVCActionCommand;
+	private volatile ExportImportService _exportImportService;
+	private volatile ImportLayoutsMVCActionCommand
+		_importLayoutsMVCActionCommand;
 
 }

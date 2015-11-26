@@ -15,6 +15,8 @@
 package com.liferay.dynamic.data.lists.form.web.portlet.action;
 
 import com.liferay.dynamic.data.lists.form.web.constants.DDLFormPortletKeys;
+import com.liferay.dynamic.data.lists.form.web.notification.DDLFormEmailNotificationSender;
+import com.liferay.dynamic.data.lists.form.web.util.DDLFormEmailNotificationUtil;
 import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordConstants;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
@@ -78,12 +80,19 @@ public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			DDLRecord.class.getName(), actionRequest);
 
-		_ddlRecordService.addRecord(
+		DDLRecord ddlRecord = _ddlRecordService.addRecord(
 			groupId, recordSetId, DDLRecordConstants.DISPLAY_INDEX_DEFAULT,
 			ddmFormValues, serviceContext);
 
-		String redirectURL = GetterUtil.getString(
-			recordSet.getSettingsProperty("redirectURL", StringPool.BLANK));
+		if (DDLFormEmailNotificationUtil.isEmailNotificationEnabled(
+				recordSet)) {
+
+			_ddlFormEmailNotificationSender.sendEmailNotification(
+				actionRequest, ddlRecord);
+		}
+
+		String redirectURL = recordSet.getSettingsProperty(
+			"redirectURL", StringPool.BLANK);
 
 		if (SessionErrors.isEmpty(actionRequest) &&
 			Validator.isNotNull(redirectURL)) {
@@ -106,19 +115,26 @@ public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
 		return ddmStructure.getDDMForm();
 	}
 
-	@Reference
+	@Reference(unbind = "-")
+	protected void setDDLFormEmailNotificationSender(
+		DDLFormEmailNotificationSender ddlFormEmailNotificationSender) {
+
+		_ddlFormEmailNotificationSender = ddlFormEmailNotificationSender;
+	}
+
+	@Reference(unbind = "-")
 	protected void setDDLRecordService(DDLRecordService ddlRecordService) {
 		_ddlRecordService = ddlRecordService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDLRecordSetService(
 		DDLRecordSetService ddlRecordSetService) {
 
 		_ddlRecordSetService = ddlRecordSetService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDDMFormValuesFactory(
 		DDMFormValuesFactory ddmFormValuesFactory) {
 
@@ -146,8 +162,10 @@ public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	private DDLRecordService _ddlRecordService;
-	private DDLRecordSetService _ddlRecordSetService;
-	private DDMFormValuesFactory _ddmFormValuesFactory;
+	private volatile DDLFormEmailNotificationSender
+		_ddlFormEmailNotificationSender;
+	private volatile DDLRecordService _ddlRecordService;
+	private volatile DDLRecordSetService _ddlRecordSetService;
+	private volatile DDMFormValuesFactory _ddmFormValuesFactory;
 
 }

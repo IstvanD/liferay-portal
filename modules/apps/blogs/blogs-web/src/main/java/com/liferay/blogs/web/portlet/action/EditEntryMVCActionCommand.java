@@ -318,51 +318,32 @@ public class EditEntryMVCActionCommand extends BaseMVCActionCommand {
 								entry.getEntryId());
 						}
 
-						sendRedirect(actionRequest, actionResponse, redirect);
+						actionRequest.setAttribute(WebKeys.REDIRECT, redirect);
 					}
 				}
 			}
 		}
-		catch (Exception e) {
-			String mvcPath = "/blogs/edit_entry.jsp";
+		catch (AssetCategoryException | AssetTagException e) {
+			SessionErrors.add(actionRequest, e.getClass(), e);
 
-			if (e instanceof NoSuchEntryException ||
-				e instanceof PrincipalException) {
+			actionResponse.setRenderParameter(
+				"mvcRenderCommandName", "/blogs/edit_entry");
+		}
+		catch (EntryContentException | EntryCoverImageCropException |
+			   EntryDescriptionException | EntryDisplayDateException |
+			   EntrySmallImageNameException | EntrySmallImageScaleException |
+			   EntryTitleException | FileSizeException |
+			   LiferayFileItemException | SanitizerException e) {
 
-				SessionErrors.add(actionRequest, e.getClass());
+			SessionErrors.add(actionRequest, e.getClass());
 
-				mvcPath = "/blogs/error.jsp";
-			}
-			else if (e instanceof EntryContentException ||
-					 e instanceof EntryCoverImageCropException ||
-					 e instanceof EntryDescriptionException ||
-					 e instanceof EntryDisplayDateException ||
-					 e instanceof EntrySmallImageNameException ||
-					 e instanceof EntrySmallImageScaleException ||
-					 e instanceof EntryTitleException ||
-					 e instanceof FileSizeException ||
-					 e instanceof LiferayFileItemException ||
-					 e instanceof SanitizerException) {
+			actionResponse.setRenderParameter(
+				"mvcRenderCommandName", "/blogs/edit_entry");
+		}
+		catch (NoSuchEntryException | PrincipalException e) {
+			SessionErrors.add(actionRequest, e.getClass());
 
-				SessionErrors.add(actionRequest, e.getClass());
-			}
-			else if (e instanceof AssetCategoryException ||
-					 e instanceof AssetTagException) {
-
-				SessionErrors.add(actionRequest, e.getClass(), e);
-			}
-			else {
-				Throwable cause = e.getCause();
-
-				if (cause instanceof SanitizerException) {
-					SessionErrors.add(actionRequest, SanitizerException.class);
-				}
-				else {
-					throw e;
-				}
-			}
-
-			actionResponse.setRenderParameter("mvcPath", mvcPath);
+			actionResponse.setRenderParameter("mvcPath", "/blogs/error.jsp");
 		}
 		catch (Throwable t) {
 			_log.error(t, t);
@@ -642,9 +623,9 @@ public class EditEntryMVCActionCommand extends BaseMVCActionCommand {
 		TransactionAttribute.Factory.create(
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
-	private BlogsEntryLocalService _blogsEntryLocalService;
-	private BlogsEntryService _blogsEntryService;
-	private TrashEntryService _trashEntryService;
+	private volatile BlogsEntryLocalService _blogsEntryLocalService;
+	private volatile BlogsEntryService _blogsEntryService;
+	private volatile TrashEntryService _trashEntryService;
 
 	private class UpdateEntryCallable implements Callable<Object[]> {
 

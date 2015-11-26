@@ -14,6 +14,7 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.counter.service.CounterLocalServiceUtil;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -42,8 +43,8 @@ import com.liferay.portal.model.LayoutTypePortletConstants;
 import com.liferay.portal.model.Plugin;
 import com.liferay.portal.model.Portlet;
 import com.liferay.portal.model.PortletConstants;
-import com.liferay.portal.model.PortletPreferences;
 import com.liferay.portal.model.PortletPreferencesIds;
+import com.liferay.portal.model.ResourcePermission;
 import com.liferay.portal.model.Theme;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionChecker;
@@ -52,6 +53,7 @@ import com.liferay.portal.service.LayoutTemplateLocalServiceUtil;
 import com.liferay.portal.service.PluginSettingLocalServiceUtil;
 import com.liferay.portal.service.PortletLocalServiceUtil;
 import com.liferay.portal.service.PortletPreferencesLocalServiceUtil;
+import com.liferay.portal.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.service.permission.PortletPermissionUtil;
 import com.liferay.portal.util.LayoutTypePortletFactoryUtil;
@@ -307,59 +309,9 @@ public class LayoutTypePortletImpl
 
 	@Override
 	public List<Portlet> getEmbeddedPortlets() {
-		List<Portlet> portlets = new ArrayList<>();
-
 		Layout layout = getLayout();
 
-		List<PortletPreferences> portletPreferences =
-			PortletPreferencesLocalServiceUtil.getPortletPreferences(
-				layout.getGroupId(), PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
-				PortletKeys.PREFS_PLID_SHARED);
-
-		if (isCustomizable() && hasUserPreferences()) {
-			portletPreferences = ListUtil.copy(portletPreferences);
-
-			portletPreferences.addAll(
-				PortletPreferencesLocalServiceUtil.getPortletPreferences(
-					_portalPreferences.getUserId(),
-					PortletKeys.PREFS_OWNER_TYPE_USER, layout.getPlid()));
-		}
-
-		for (PortletPreferences portletPreference : portletPreferences) {
-			String portletId = portletPreference.getPortletId();
-
-			Portlet portlet = PortletLocalServiceUtil.getPortletById(
-				getCompanyId(), portletId);
-
-			if ((portlet == null) || !portlet.isReady() ||
-				portlet.isUndeployedPortlet() || !portlet.isActive()) {
-
-				continue;
-			}
-
-			Portlet embeddedPortlet = portlet;
-
-			if (portlet.isInstanceable()) {
-
-				// Instanceable portlets do not need to be cloned because they
-				// are already cloned. See the method getPortletById in the
-				// class PortletLocalServiceImpl and how it references the
-				// method getClonedInstance in the class PortletImpl.
-
-			}
-			else {
-				embeddedPortlet = (Portlet)embeddedPortlet.clone();
-			}
-
-			// We set embedded portlets as static on order to avoid adding the
-			// close and/or move icons.
-
-			embeddedPortlet.setStatic(true);
-
-			portlets.add(embeddedPortlet);
-		}
-
-		_embeddedPortlets = portlets;
+		_embeddedPortlets = layout.getEmbeddedPortlets();
 
 		return _embeddedPortlets;
 	}
@@ -844,7 +796,7 @@ public class LayoutTypePortletImpl
 		Portlet portlet = PortletLocalServiceUtil.getPortletById(
 			layout.getCompanyId(), portletId);
 
-		long scopeGroupId = PortalUtil.getScopeGroupId(getLayout(), portletId);
+		long scopeGroupId = PortalUtil.getScopeGroupId(layout, portletId);
 
 		if (PortletPreferencesLocalServiceUtil.getPortletPreferencesCount(
 				scopeGroupId, PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
@@ -1443,6 +1395,36 @@ public class LayoutTypePortletImpl
 		}
 	}
 
+	protected void copyResourcePermissions(
+		String sourcePortletId, String targetPortletId) {
+
+		Layout layout = getLayout();
+
+		Portlet portlet = PortletLocalServiceUtil.getPortletById(
+			getCompanyId(), sourcePortletId);
+
+		String sourcePortletPrimaryKey = PortletPermissionUtil.getPrimaryKey(
+			layout.getPlid(), sourcePortletId);
+
+		List<ResourcePermission> resourcePermissions =
+			ResourcePermissionLocalServiceUtil.getResourcePermissions(
+				portlet.getCompanyId(), portlet.getPortletName(),
+				PortletKeys.PREFS_OWNER_TYPE_USER, sourcePortletPrimaryKey);
+
+		for (ResourcePermission resourcePermission : resourcePermissions) {
+			String targetPortletPrimaryKey =
+				PortletPermissionUtil.getPrimaryKey(
+					layout.getPlid(), targetPortletId);
+
+			resourcePermission.setResourcePermissionId(
+				CounterLocalServiceUtil.increment());
+			resourcePermission.setPrimKey(targetPortletPrimaryKey);
+
+			ResourcePermissionLocalServiceUtil.addResourcePermission(
+				resourcePermission);
+		}
+	}
+
 	protected String getColumn(String portletId) {
 		String portletIdColumnId = StringPool.BLANK;
 
@@ -1683,6 +1665,13 @@ public class LayoutTypePortletImpl
 
 		for (String portletId : portletIds) {
 			try {
+				if (!PortletPermissionUtil.contains(
+						permissionChecker, getLayout(), portletId,
+						ActionKeys.VIEW, true)) {
+
+					continue;
+				}
+
 				String rootPortletId = PortletConstants.getRootPortletId(
 					portletId);
 
@@ -1726,6 +1715,8 @@ public class LayoutTypePortletImpl
 
 				copyPreferences(
 					_portalPreferences.getUserId(), portletId, newPortletId);
+
+				copyResourcePermissions(portletId, newPortletId);
 			}
 			else {
 				newPortletId = portletId;

@@ -378,6 +378,15 @@ public class JSPSourceProcessor extends BaseSourceProcessor {
 
 		newContent = formatLogFileName(absolutePath, newContent);
 
+		// LPS-59076
+
+		if (portalSource && isModulesFile(absolutePath) &&
+			newContent.contains("import=\"com.liferay.registry.Registry")) {
+
+			processErrorMessage(
+				fileName, "Do not use Registry in modules: " + fileName);
+		}
+
 		Matcher matcher = _javaClassPattern.matcher(newContent);
 
 		if (matcher.find()) {
@@ -750,7 +759,8 @@ public class JSPSourceProcessor extends BaseSourceProcessor {
 							}
 							else if (trimmedLine.endsWith(
 										StringPool.APOSTROPHE) &&
-									 !trimmedLine.contains(StringPool.QUOTE)) {
+									 (!trimmedLine.contains(StringPool.QUOTE) ||
+									  !tag.contains(StringPool.COLON))) {
 
 								line = StringUtil.replace(
 									line, StringPool.APOSTROPHE,
@@ -759,6 +769,7 @@ public class JSPSourceProcessor extends BaseSourceProcessor {
 								readAttributes = false;
 							}
 							else if (trimmedLine.endsWith(StringPool.QUOTE) &&
+									 tag.contains(StringPool.COLON) &&
 									 (StringUtil.count(
 										trimmedLine, StringPool.QUOTE) > 2)) {
 

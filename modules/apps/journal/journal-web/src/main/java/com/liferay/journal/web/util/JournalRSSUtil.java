@@ -41,7 +41,6 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -54,6 +53,7 @@ import com.liferay.portal.service.ImageLocalService;
 import com.liferay.portal.service.LayoutLocalService;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.util.WebKeys;
 import com.liferay.portlet.PortletURLImpl;
 import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
 import com.liferay.portlet.documentlibrary.service.DLAppLocalService;
@@ -663,43 +663,43 @@ public class JournalRSSUtil {
 		return url;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setDLAppLocalService(DLAppLocalService dlAppLocalService) {
 		_dlAppLocalService = dlAppLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setImageLocalService(ImageLocalService imageLocalService) {
 		_imageLocalService = imageLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setJournalArticleLocalService(
 		JournalArticleLocalService journalArticleLocalService) {
 
 		_journalArticleLocalService = journalArticleLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setJournalContent(JournalContent journalContent) {
 		_journalContent = journalContent;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setJournalContentSearchLocalService(
 		JournalContentSearchLocalService journalContentSearchLocalService) {
 
 		_journalContentSearchLocalService = journalContentSearchLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setJournalFeedLocalService(
 		JournalFeedLocalService journalFeedLocalService) {
 
 		_journalFeedLocalService = journalFeedLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setLayoutLocalService(
 		LayoutLocalService layoutLocalService) {
 
@@ -712,12 +712,13 @@ public class JournalRSSUtil {
 
 	private static final Log _log = LogFactoryUtil.getLog(JournalRSSUtil.class);
 
-	private DLAppLocalService _dlAppLocalService;
-	private ImageLocalService _imageLocalService;
-	private JournalArticleLocalService _journalArticleLocalService;
-	private JournalContent _journalContent;
-	private JournalContentSearchLocalService _journalContentSearchLocalService;
-	private JournalFeedLocalService _journalFeedLocalService;
-	private LayoutLocalService _layoutLocalService;
+	private volatile DLAppLocalService _dlAppLocalService;
+	private volatile ImageLocalService _imageLocalService;
+	private volatile JournalArticleLocalService _journalArticleLocalService;
+	private volatile JournalContent _journalContent;
+	private volatile JournalContentSearchLocalService
+		_journalContentSearchLocalService;
+	private volatile JournalFeedLocalService _journalFeedLocalService;
+	private volatile LayoutLocalService _layoutLocalService;
 
 }

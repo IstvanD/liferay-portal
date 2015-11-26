@@ -59,13 +59,14 @@ public class RadioDDMFormFieldValueRenderer
 		return ddmFormField.getDDMFormFieldOptions();
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setRadioDDMFormFieldValueAccessor(
 		RadioDDMFormFieldValueAccessor radioDDMFormFieldValueAccessor) {
 
 		_radioDDMFormFieldValueAccessor = radioDDMFormFieldValueAccessor;
 	}
 
-	private RadioDDMFormFieldValueAccessor _radioDDMFormFieldValueAccessor;
+	private volatile RadioDDMFormFieldValueAccessor
+		_radioDDMFormFieldValueAccessor;
 
 }

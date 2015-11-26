@@ -25,7 +25,7 @@ if (Validator.isNotNull(keywords)) {
 	keywords = StringUtil.quote(keywords, StringPool.PERCENT);
 }
 
-SearchContainer tagsSearchContainer = new SearchContainer(renderRequest, renderResponse.createRenderURL(), null, "there-are-no-tags.-you-can-add-a-tag-by-clicking-the-plus-button-on-the-right-bottom-corner");
+SearchContainer tagsSearchContainer = new SearchContainer(renderRequest, renderResponse.createRenderURL(), null, "there-are-no-tags.-you-can-add-a-tag-by-clicking-the-plus-button-on-the-bottom-right-corner");
 
 String orderByCol = ParamUtil.getString(request, "orderByCol", "name");
 
@@ -81,8 +81,8 @@ tagsSearchContainer.setResults(tags);
 
 <c:if test="<%= Validator.isNotNull(keywords) || (tagsCount > 0) %>">
 	<liferay-frontend:management-bar
-		checkBoxContainerId="assetTagsSearchContainer"
 		includeCheckBox="<%= true %>"
+		searchContainerId="assetTags"
 	>
 		<liferay-frontend:management-bar-filters>
 			<liferay-frontend:management-bar-navigation
@@ -124,7 +124,6 @@ tagsSearchContainer.setResults(tags);
 
 		<liferay-ui:search-container-row
 			className="com.liferay.portlet.asset.model.AssetTag"
-			cssClass="selectable"
 			keyProperty="tagId"
 			modelVar="tag"
 		>

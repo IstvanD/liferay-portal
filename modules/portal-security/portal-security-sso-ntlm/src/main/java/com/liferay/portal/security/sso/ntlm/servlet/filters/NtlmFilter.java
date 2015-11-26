@@ -98,14 +98,14 @@ public class NtlmFilter extends BaseFilter {
 		return false;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	public void setNetlogonConnectionManager(
 		NetlogonConnectionManager netlogonConnectionManager) {
 
 		_netlogonConnectionManager = netlogonConnectionManager;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	public void setSingleVMPool(SingleVMPool singleVMPool) {
 		_portalCache = (PortalCache<String, byte[]>)singleVMPool.getPortalCache(
 			NtlmFilter.class.getName());
@@ -324,7 +324,7 @@ public class NtlmFilter extends BaseFilter {
 	private static final Log _log = LogFactoryUtil.getLog(NtlmFilter.class);
 
 	private volatile ConfigurationFactory _configurationFactory;
-	private NetlogonConnectionManager _netlogonConnectionManager;
+	private volatile NetlogonConnectionManager _netlogonConnectionManager;
 	private final Map<Long, NtlmManager> _ntlmManagers =
 		new ConcurrentHashMap<>();
 	private PortalCache<String, byte[]> _portalCache;

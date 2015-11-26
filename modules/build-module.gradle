@@ -4,6 +4,10 @@ import com.liferay.gradle.util.copy.StripPathSegmentsAction
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 buildscript {
+	dependencies {
+		classpath group: "com.liferay", name: "com.liferay.gradle.util", version: "1.0.23"
+	}
+
 	repositories {
 		if (!Boolean.getBoolean("maven.local.ignore")) {
 			mavenLocal()
@@ -12,10 +16,6 @@ buildscript {
 		maven {
 			url System.properties["repository.url"] ?: "http://cdn.repository.liferay.com/nexus/content/groups/public"
 		}
-	}
-
-	dependencies {
-		classpath group: "com.liferay", name: "com.liferay.gradle.util", version: "1.0.23"
 	}
 }
 
@@ -29,6 +29,14 @@ if (FileUtil.exists(project, "service.xml")) {
 	apply plugin: "com.liferay.portal.tools.service.builder"
 	apply plugin: "com.liferay.portal.tools.upgrade.table.builder"
 	apply plugin: "com.liferay.portal.tools.wsdd.builder"
+}
+
+if (FileUtil.exists(project, "wsdl")) {
+	apply plugin: "com.liferay.wsdl.builder"
+}
+
+if (FileUtil.exists(project, "xsd")) {
+	apply plugin: "com.liferay.xsd.builder"
 }
 
 liferay {
@@ -67,8 +75,15 @@ afterEvaluate {
 }
 
 buildCSS {
-	dependsOn ":frontend:frontend-common-css:buildCssCommon"
-	portalCommonDirName = relativePath(new File(rootDir, "frontend/frontend-common-css/tmp/META-INF/resources"))
+	dependsOn {
+		FileCollection cssFiles = getCSSFiles()
+
+		if (!cssFiles.empty) {
+			":frontend:frontend-common-css:buildCssCommon"
+		}
+	}
+
+	portalCommonDir = new File(rootDir, "frontend/frontend-common-css/tmp/META-INF/resources")
 }
 
 buildSoy {
@@ -104,10 +119,6 @@ configurations {
 	alloyTaglib {
 		extendsFrom configurations.runtime
 		extendsFrom portal
-	}
-
-	javadocFormatter {
-		extendsFrom compile
 	}
 }
 

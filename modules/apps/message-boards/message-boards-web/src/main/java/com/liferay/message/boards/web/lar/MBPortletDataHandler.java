@@ -34,7 +34,6 @@ import com.liferay.portlet.exportimport.lar.StagedModelDataHandler;
 import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerRegistryUtil;
 import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
 import com.liferay.portlet.exportimport.lar.StagedModelType;
-import com.liferay.portlet.exportimport.xstream.XStreamAliasRegistryUtil;
 import com.liferay.portlet.messageboards.constants.MBConstants;
 import com.liferay.portlet.messageboards.model.MBBan;
 import com.liferay.portlet.messageboards.model.MBCategory;
@@ -42,11 +41,6 @@ import com.liferay.portlet.messageboards.model.MBCategoryConstants;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBThread;
 import com.liferay.portlet.messageboards.model.MBThreadFlag;
-import com.liferay.portlet.messageboards.model.impl.MBBanImpl;
-import com.liferay.portlet.messageboards.model.impl.MBCategoryImpl;
-import com.liferay.portlet.messageboards.model.impl.MBMessageImpl;
-import com.liferay.portlet.messageboards.model.impl.MBThreadFlagImpl;
-import com.liferay.portlet.messageboards.model.impl.MBThreadImpl;
 import com.liferay.portlet.messageboards.service.MBBanLocalService;
 import com.liferay.portlet.messageboards.service.MBCategoryLocalService;
 import com.liferay.portlet.messageboards.service.MBMessageLocalService;
@@ -98,13 +92,6 @@ public class MBPortletDataHandler extends BasePortletDataHandler {
 		setImportControls(getExportControls());
 		setPublishToLiveByDefault(
 			PropsValues.MESSAGE_BOARDS_PUBLISH_TO_LIVE_BY_DEFAULT);
-
-		XStreamAliasRegistryUtil.register(MBBanImpl.class, "MBBan");
-		XStreamAliasRegistryUtil.register(MBCategoryImpl.class, "MBCategory");
-		XStreamAliasRegistryUtil.register(MBMessageImpl.class, "MBMessage");
-		XStreamAliasRegistryUtil.register(MBThreadImpl.class, "MBThread");
-		XStreamAliasRegistryUtil.register(
-			MBThreadFlagImpl.class, "MBThreadFlag");
 	}
 
 	@Override
@@ -379,11 +366,11 @@ public class MBPortletDataHandler extends BasePortletDataHandler {
 		_mbThreadLocalService = mbThreadLocalService;
 	}
 
-	private MBBanLocalService _mbBanLocalService;
-	private MBCategoryLocalService _mbCategoryLocalService;
-	private MBMessageLocalService _mbMessageLocalService;
-	private MBStatsUserLocalService _mbStatsUserLocalService;
-	private MBThreadFlagLocalService _mbThreadFlagLocalService;
-	private MBThreadLocalService _mbThreadLocalService;
+	private volatile MBBanLocalService _mbBanLocalService;
+	private volatile MBCategoryLocalService _mbCategoryLocalService;
+	private volatile MBMessageLocalService _mbMessageLocalService;
+	private volatile MBStatsUserLocalService _mbStatsUserLocalService;
+	private volatile MBThreadFlagLocalService _mbThreadFlagLocalService;
+	private volatile MBThreadLocalService _mbThreadLocalService;
 
 }

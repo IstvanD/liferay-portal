@@ -264,7 +264,7 @@ public class PortletDataContextFactoryImpl
 		}
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setGroupLocalService(GroupLocalService groupLocalService) {
 		_groupLocalService = groupLocalService;
 	}
@@ -301,6 +301,6 @@ public class PortletDataContextFactoryImpl
 		}
 	}
 
-	private GroupLocalService _groupLocalService;
+	private volatile GroupLocalService _groupLocalService;
 
 }

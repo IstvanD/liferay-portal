@@ -54,6 +54,28 @@
 		<execute macro="BlogsEntry#publish" />
 	</command>
 
+	<command name="addEntryWithHTML">
+		<execute macro="BlogsNavigator#gotoAddEntry" />
+
+		<execute macro="BlogsEntry#addTitle">
+			<var name="entryTitle" value="${entryTitle}" />
+		</execute>
+
+		<execute macro="BlogsEntry#addSubtitle">
+			<var name="entrySubtitle" value="${entrySubtitle}" />
+		</execute>
+
+		<execute function="Click" locator1="AlloyEditor#CONTENT_FIELD" />
+
+		<execute function="Click" locator1="Button#EDITOR_SWITCH" />
+
+		<execute function="Type#sendKeysAceEditor" locator1="TextArea#ACE_EDITOR" value1="${entryContent}" />
+
+		<execute function="AssertClick" locator1="Button#PUBLISH" value1="Publish" />
+
+		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
+	</command>
+
 	<command name="addEntryWithPermissions">
 		<execute macro="BlogsNavigator#gotoAddEntry" />
 
@@ -433,8 +455,10 @@
 	</command>
 
 	<command name="tearDownCP">
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Blogs" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Blogs" />
 		</execute>
 
 		<if>
@@ -448,8 +472,10 @@
 			</then>
 		</if>
 
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Recycle Bin" />
+		<execute macro="Navigator#openURL" />
+
+		<execute macro="ProductMenu#gotoSitesContent">
+			<var name="portlet" value="Recycle Bin" />
 		</execute>
 
 		<execute macro="RecycleBin#emptyCP" />

@@ -166,6 +166,7 @@ public interface User extends UserModel, PersistedModel {
 	intranet(versus extranet)  site home page, if no friendly URL
 	is available for the user's profile
 	* @return the user's display URL
+	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link #getDisplayURL(ThemeDisplay)}
 	*/
 	@java.lang.Deprecated()
@@ -230,6 +231,7 @@ public interface User extends UserModel, PersistedModel {
 	intranet (versus extranet) site home page, if no friendly URL is
 	available for the user's profile
 	* @return the user's display URL
+	* @throws PortalException
 	*/
 	public java.lang.String getDisplayURL(
 		com.liferay.portal.theme.ThemeDisplay themeDisplay,
@@ -275,6 +277,8 @@ public interface User extends UserModel, PersistedModel {
 	public long[] getGroupIds();
 
 	public java.util.List<com.liferay.portal.model.Group> getGroups();
+
+	public java.lang.String getInitials();
 
 	public java.util.Locale getLocale();
 

@@ -107,8 +107,7 @@ public class TrashEntryLocalServiceWrapper implements TrashEntryLocalService,
 	*/
 	@Override
 	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(
-		java.lang.String className, long classPK)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		java.lang.String className, long classPK) {
 		return _trashEntryLocalService.deleteEntry(className, classPK);
 	}
 
@@ -119,8 +118,7 @@ public class TrashEntryLocalServiceWrapper implements TrashEntryLocalService,
 	* @return the trash entry with the primary key
 	*/
 	@Override
-	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+	public com.liferay.portlet.trash.model.TrashEntry deleteEntry(long entryId) {
 		return _trashEntryLocalService.deleteEntry(entryId);
 	}
 
@@ -373,6 +371,11 @@ public class TrashEntryLocalServiceWrapper implements TrashEntryLocalService,
 	public com.liferay.portlet.trash.model.TrashEntry getEntry(long entryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return _trashEntryLocalService.getEntry(entryId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery getIndexableActionableDynamicQuery() {
+		return _trashEntryLocalService.getIndexableActionableDynamicQuery();
 	}
 
 	/**

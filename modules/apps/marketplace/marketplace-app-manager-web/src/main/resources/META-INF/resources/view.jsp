@@ -17,23 +17,83 @@
 <%@ include file="/init.jsp" %>
 
 <%
-String toolbarItem = ParamUtil.getString(request, "toolbarItem", "manage");
-
-PortletURL portletURL = renderResponse.createRenderURL();
-
-portletURL.setParameter("mvcPath", "/view.jsp");
-portletURL.setParameter("toolbarItem", toolbarItem);
+String category = ParamUtil.getString(request, "category");
+int state = ParamUtil.getInteger(request, "state");
 %>
 
-<liferay-ui:tabs
-	names="manage,install"
-	refresh="<%= false %>"
->
-	<liferay-ui:section>
-		<%@ include file="/manage.jspf" %>
-	</liferay-ui:section>
+<aui:nav-bar markupView="lexicon">
+	<aui:nav cssClass="navbar-nav">
+		<portlet:renderURL var="viewURL" />
 
-	<liferay-ui:section>
-		<%@ include file="/install_apps.jspf" %>
-	</liferay-ui:section>
-</liferay-ui:tabs>
+		<aui:nav-item
+			href="<%= viewURL %>"
+			label="apps"
+			selected="<%= true %>"
+		/>
+	</aui:nav>
+</aui:nav-bar>
+
+<div class="container-fluid-1280">
+	<liferay-ui:search-container>
+		<liferay-ui:search-container-results>
+
+			<%
+			List<Bundle> bundles = BundleManagerUtil.getBundles();
+
+			List<AppDisplay> appDisplays = AppDisplayFactoryUtil.getAppDisplays(bundles, category, state);
+
+			int end = searchContainer.getEnd();
+
+			if (end > appDisplays.size()) {
+				end = appDisplays.size();
+			}
+
+			searchContainer.setResults(appDisplays.subList(searchContainer.getStart(), end));
+
+			searchContainer.setTotal(appDisplays.size());
+			%>
+
+		</liferay-ui:search-container-results>
+
+		<liferay-ui:search-container-row
+			className="com.liferay.marketplace.app.manager.web.util.AppDisplay"
+			modelVar="appDisplay"
+		>
+			<liferay-ui:search-container-column-image
+				src="<%= appDisplay.getIconURL() %>"
+			/>
+
+			<liferay-ui:search-container-column-text colspan="<%= 2 %>">
+				<h5>
+					<a href="<%= HttpUtil.encodeURL(appDisplay.getDisplayURL(renderResponse)) %>">
+						<%= appDisplay.getTitle() %>
+					</a>
+				</h5>
+
+				<h6 class="text-default">
+					<%= appDisplay.getDescription() %>
+				</h6>
+
+				<div class="additional-info text-default">
+					<div class="additional-info-item">
+						<strong>
+							<liferay-ui:message key="version" />:
+						</strong>
+
+						<%= appDisplay.getVersion() %>
+					</div>
+
+					<div class="additional-info-item">
+						<strong>
+							<liferay-ui:message key="status" />:
+						</strong>
+
+						<liferay-ui:message key="<%= BundleStateConstants.getLabel(appDisplay.getState()) %>" />
+					</div>
+				</div>
+			</liferay-ui:search-container-column-text>
+		</liferay-ui:search-container-row>
+
+		<liferay-ui:search-iterator displayStyle="descriptive" markupView="lexicon" />
+	</liferay-ui:search-container>
+</div>

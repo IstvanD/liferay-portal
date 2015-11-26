@@ -199,7 +199,7 @@ public class OpenSSOFilter extends BaseFilter {
 		_configurationFactory = configurationFactory;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setOpenSSO(OpenSSO openSSO) {
 		_openSSO = openSSO;
 	}
@@ -209,6 +209,6 @@ public class OpenSSOFilter extends BaseFilter {
 	private static final Log _log = LogFactoryUtil.getLog(OpenSSOFilter.class);
 
 	private volatile ConfigurationFactory _configurationFactory;
-	private OpenSSO _openSSO;
+	private volatile OpenSSO _openSSO;
 
 }

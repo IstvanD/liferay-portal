@@ -184,6 +184,9 @@ public abstract class BaseUploadHandler implements UploadHandler {
 
 	protected abstract String getParameterName();
 
+	/**
+	 * @throws PortalException
+	 */
 	protected ServiceContext getServiceContext(
 			UploadPortletRequest uploadPortletRequest)
 		throws PortalException {

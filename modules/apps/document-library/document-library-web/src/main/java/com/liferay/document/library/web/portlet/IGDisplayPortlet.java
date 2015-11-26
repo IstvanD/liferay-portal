@@ -30,6 +30,8 @@ import org.osgi.service.component.annotations.Reference;
 	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
+		"com.liferay.portlet.application-type=full-page-application",
+		"com.liferay.portlet.application-type=widget",
 		"com.liferay.portlet.css-class-wrapper=portlet-image-gallery-display",
 		"com.liferay.portlet.display-category=category.cms",
 		"com.liferay.portlet.header-portlet-css=/image_gallery_display/css/main.css",
@@ -61,7 +63,8 @@ import org.osgi.service.component.annotations.Reference;
 public class IGDisplayPortlet extends MVCPortlet {
 
 	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.web)(release.schema.version=1.0.0))"
+		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.web)(release.schema.version=1.0.0))",
+		unbind = "-"
 	)
 	protected void setRelease(Release release) {
 	}

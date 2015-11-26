@@ -101,22 +101,17 @@
 	</command>
 
 	<command name="gotoBlogsEntryCP">
+		<execute macro="Navigator#openURL" />
+
 		<execute macro="ProductMenu#gotoSitesContent">
 			<var name="portlet" value="Blogs" />
-		</execute>
-
-		<execute macro="Page#gotoContentCP">
-			<var name="pageName" value="${pageName}" />
-			<var name="portletName" value="${portletName}" />
-			<var name="siteName" value="${siteName}" />
-			<var name="siteURL" value="${siteURLTemp}" />
 		</execute>
 
 		<var name="key_assetEntry" value="${entryTitle}" />
 
 		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
 
-		<execute function="AssertClick" locator1="MenuItem#PERMISSIONS" value1="Permissions" />
+		<execute function="AssertClick" locator1="MenuItem#PERMISSIONS_LEXICON" value1="Permissions" />
 
 		<execute function="SelectFrame" locator1="Permissions#PERMISSIONS_IFRAME" />
 	</command>
@@ -148,6 +143,16 @@
 
 		<execute function="SelectFrame" locator1="BasePortletConfiguration#CONFIGURATION_IFRAME" />
 		<execute function="AssertClick" locator1="BasePortletConfiguration#NAVIGATION_PERMISSIONS" value1="Permissions" />
+	</command>
+
+	<command name="gotoDMDocumentCP">
+		<var name="key_assetEntry" value="${dmDocumentTitle}" />
+
+		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
+
+		<execute function="AssertClick" locator1="MenuItem#PERMISSIONS_LEXICON" value1="Permissions" />
+
+		<execute function="SelectFrame" locator1="IFrame#DIALOG" />
 	</command>
 
 	<command name="gotoDMDocumentPG">
@@ -312,7 +317,7 @@
 			<var name="siteScopeName" value="${siteScopeName}" />
 		</execute>
 
-		<var name="key_listEntry" value="${teamName}" />
+		<var name="key_assetEntry" value="${teamName}" />
 
 		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
 		<execute function="AssertClick" locator1="MenuItem#PERMISSIONS_LEXICON" value1="Permissions" />
@@ -346,7 +351,7 @@
 	</command>
 
 	<command name="gotoWCArticle">
-		<var name="key_descriptiveEntry" value="${webContentTitle}" />
+		<var name="key_assetEntry" value="${webContentTitle}" />
 
 		<execute function="Click" locator1="Icon#DESCRIPTIVE_VERTICAL_ELLIPSIS" />
 		<execute function="AssertClick" locator1="MenuItem#PERMISSIONS_LEXICON" value1="Permissions" />

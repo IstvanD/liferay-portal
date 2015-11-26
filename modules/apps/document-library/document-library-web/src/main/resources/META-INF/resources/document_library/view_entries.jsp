@@ -58,13 +58,21 @@ EntriesChecker entriesChecker = new EntriesChecker(liferayPortletRequest, lifera
 
 entriesChecker.setCssClass("entry-selector");
 
+EntriesMover entriesMover = new EntriesMover(scopeGroupId);
+
 String orderByCol = GetterUtil.getString((String)request.getAttribute("view.jsp-orderByCol"));
 String orderByType = GetterUtil.getString((String)request.getAttribute("view.jsp-orderByType"));
 
-OrderByComparator<?> orderByComparator = DLUtil.getRepositoryModelOrderByComparator(orderByCol, orderByType, true);
+boolean orderByModel = false;
+
+if (navigation.equals("home")) {
+	orderByModel = true;
+}
+
+OrderByComparator<?> orderByComparator = DLUtil.getRepositoryModelOrderByComparator(orderByCol, orderByType, orderByModel);
 
 if (navigation.equals("recent")) {
-	orderByComparator = new RepositoryModelModifiedDateComparator(false, true);
+	orderByComparator = new RepositoryModelModifiedDateComparator();
 }
 
 dlSearchContainer.setOrderByCol(orderByCol);
@@ -209,9 +217,12 @@ if (portletTitleBasedNavigation && (folderId != DLFolderConstants.DEFAULT_PARENT
 
 	<%
 	String[] entryColumns = dlPortletInstanceSettingsHelper.getEntryColumns();
+
+	String searchContainerId = ParamUtil.getString(request, "searchContainerId");
 	%>
 
 	<liferay-ui:search-container
+		id="<%= searchContainerId %>"
 		searchContainer="<%= dlSearchContainer %>"
 		total="<%= total %>"
 		totalVar="dlSearchContainerTotal"
@@ -223,7 +234,7 @@ if (portletTitleBasedNavigation && (folderId != DLFolderConstants.DEFAULT_PARENT
 
 		<liferay-ui:search-container-row
 			className="Object"
-			cssClass="app-view-entry-taglib entry-display-style selectable"
+			cssClass="app-view-entry-taglib entry-display-style"
 			modelVar="result"
 		>
 
@@ -239,10 +250,16 @@ if (portletTitleBasedNavigation && (folderId != DLFolderConstants.DEFAULT_PARENT
 						latestFileVersion = fileEntry.getLatestFileVersion();
 					}
 
+					DLViewFileVersionDisplayContext dlViewFileVersionDisplayContext = null;
+
 					if (fileShortcut == null) {
+						dlViewFileVersionDisplayContext = dlDisplayContextProvider.getDLViewFileVersionDisplayContext(request, response, fileEntry.getFileVersion());
+
 						row.setPrimaryKey(String.valueOf(fileEntry.getFileEntryId()));
 					}
 					else {
+						dlViewFileVersionDisplayContext = dlDisplayContextProvider.getDLViewFileVersionDisplayContext(request, response, fileShortcut);
+
 						row.setPrimaryKey(String.valueOf(fileShortcut.getFileShortcutId()));
 					}
 
@@ -251,8 +268,12 @@ if (portletTitleBasedNavigation && (folderId != DLFolderConstants.DEFAULT_PARENT
 					if (DLFileEntryPermission.contains(permissionChecker, fileEntry, ActionKeys.DELETE) || DLFileEntryPermission.contains(permissionChecker, fileEntry, ActionKeys.UPDATE)) {
 						draggable = true;
 
-						if (Validator.isNull(dlSearchContainer.getRowChecker())) {
+						if (dlSearchContainer.getRowChecker() == null) {
 							dlSearchContainer.setRowChecker(entriesChecker);
+						}
+
+						if (dlSearchContainer.getRowMover() == null) {
+							dlSearchContainer.setRowMover(entriesMover);
 						}
 					}
 
@@ -317,10 +338,9 @@ if (portletTitleBasedNavigation && (folderId != DLFolderConstants.DEFAULT_PARENT
 									url="<%= rowURL != null ? rowURL.toString() : null %>"
 								>
 									<liferay-frontend:vertical-card-sticker-bottom>
-										<liferay-ui:user-portrait
-											cssClass="sticker sticker-bottom"
-											userId="<%= fileEntry.getUserId() %>"
-										/>
+										<div class="sticker sticker-bottom <%= dlViewFileVersionDisplayContext.getCssClassFileMimeType() %>">
+											<%= StringUtil.upperCase(latestFileVersion.getExtension()) %>
+										</div>
 									</liferay-frontend:vertical-card-sticker-bottom>
 
 									<liferay-frontend:vertical-card-header>
@@ -416,8 +436,12 @@ if (portletTitleBasedNavigation && (folderId != DLFolderConstants.DEFAULT_PARENT
 					if (DLFolderPermission.contains(permissionChecker, curFolder, ActionKeys.DELETE) || DLFolderPermission.contains(permissionChecker, curFolder, ActionKeys.UPDATE)) {
 						draggable = true;
 
-						if (Validator.isNull(dlSearchContainer.getRowChecker())) {
+						if (dlSearchContainer.getRowChecker() == null) {
 							dlSearchContainer.setRowChecker(entriesChecker);
+						}
+
+						if (dlSearchContainer.getRowMover() == null) {
+							dlSearchContainer.setRowMover(entriesMover);
 						}
 					}
 

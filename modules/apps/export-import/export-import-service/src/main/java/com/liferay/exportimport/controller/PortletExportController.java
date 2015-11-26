@@ -1251,7 +1251,7 @@ public class PortletExportController implements ExportController {
 		return PROCESS_FLAG_PORTLET_EXPORT_IN_PROCESS;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setAssetEntryLocalService(
 		AssetEntryLocalService assetEntryLocalService) {
 
@@ -1265,40 +1265,40 @@ public class PortletExportController implements ExportController {
 		_exportImportLifecycleManager = exportImportLifecycleManager;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setGroupLocalService(GroupLocalService groupLocalService) {
 		_groupLocalService = groupLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setLayoutLocalService(
 		LayoutLocalService layoutLocalService) {
 
 		_layoutLocalService = layoutLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setPortletItemLocalService(
 		PortletItemLocalService portletItemLocalService) {
 
 		_portletItemLocalService = portletItemLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setPortletLocalService(
 		PortletLocalService portletLocalService) {
 
 		_portletLocalService = portletLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setPortletPreferencesLocalService(
 		PortletPreferencesLocalService portletPreferencesLocalService) {
 
 		_portletPreferencesLocalService = portletPreferencesLocalService;
 	}
 
-	@Reference
+	@Reference(unbind = "-")
 	protected void setUserLocalService(UserLocalService userLocalService) {
 		_userLocalService = userLocalService;
 	}
@@ -1306,18 +1306,19 @@ public class PortletExportController implements ExportController {
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortletExportController.class);
 
-	private AssetEntryLocalService _assetEntryLocalService;
+	private volatile AssetEntryLocalService _assetEntryLocalService;
 	private final DeletionSystemEventExporter _deletionSystemEventExporter =
 		DeletionSystemEventExporter.getInstance();
-	private ExportImportLifecycleManager _exportImportLifecycleManager;
-	private GroupLocalService _groupLocalService;
-	private LayoutLocalService _layoutLocalService;
+	private volatile ExportImportLifecycleManager _exportImportLifecycleManager;
+	private volatile GroupLocalService _groupLocalService;
+	private volatile LayoutLocalService _layoutLocalService;
 	private final PermissionExporter _permissionExporter =
 		PermissionExporter.getInstance();
-	private PortletItemLocalService _portletItemLocalService;
-	private PortletLocalService _portletLocalService;
-	private PortletPreferencesLocalService _portletPreferencesLocalService;
-	private UserLocalService _userLocalService;
+	private volatile PortletItemLocalService _portletItemLocalService;
+	private volatile PortletLocalService _portletLocalService;
+	private volatile PortletPreferencesLocalService
+		_portletPreferencesLocalService;
+	private volatile UserLocalService _userLocalService;
 
 	private class UpdatePortletLastPublishDateCallable
 		implements Callable<Void> {

@@ -258,6 +258,7 @@ public abstract class BaseStore implements Store {
 	 * @param  fileName the file's name
 	 * @param  versionLabel the file's version label
 	 * @return Returns the {@link File} object with the file's name
+	 * @throws PortalException
 	 */
 	@Override
 	public File getFile(

@@ -110,8 +110,7 @@ public class TrashEntryLocalServiceUtil {
 	* @return the trash entry with the entity class name and primary key
 	*/
 	public static com.liferay.portlet.trash.model.TrashEntry deleteEntry(
-		java.lang.String className, long classPK)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		java.lang.String className, long classPK) {
 		return getService().deleteEntry(className, classPK);
 	}
 
@@ -122,8 +121,7 @@ public class TrashEntryLocalServiceUtil {
 	* @return the trash entry with the primary key
 	*/
 	public static com.liferay.portlet.trash.model.TrashEntry deleteEntry(
-		long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long entryId) {
 		return getService().deleteEntry(entryId);
 	}
 
@@ -356,6 +354,10 @@ public class TrashEntryLocalServiceUtil {
 		long entryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getEntry(entryId);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery getIndexableActionableDynamicQuery() {
+		return getService().getIndexableActionableDynamicQuery();
 	}
 
 	/**

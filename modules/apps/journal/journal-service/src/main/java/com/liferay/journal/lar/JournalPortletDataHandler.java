@@ -23,9 +23,6 @@ import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFeed;
 import com.liferay.journal.model.JournalFolder;
-import com.liferay.journal.model.impl.JournalArticleImpl;
-import com.liferay.journal.model.impl.JournalFeedImpl;
-import com.liferay.journal.model.impl.JournalFolderImpl;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalFeedLocalService;
 import com.liferay.journal.service.JournalFolderLocalService;
@@ -51,7 +48,6 @@ import com.liferay.portlet.exportimport.lar.PortletDataHandlerBoolean;
 import com.liferay.portlet.exportimport.lar.PortletDataHandlerControl;
 import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
 import com.liferay.portlet.exportimport.lar.StagedModelType;
-import com.liferay.portlet.exportimport.xstream.XStreamAliasRegistryUtil;
 
 import java.util.List;
 
@@ -141,12 +137,6 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 				JournalFolder.class.getName()));
 		setPublishToLiveByDefault(
 			JournalServiceConfigurationValues.PUBLISH_TO_LIVE_BY_DEFAULT);
-
-		XStreamAliasRegistryUtil.register(
-			JournalArticleImpl.class, "JournalArticle");
-		XStreamAliasRegistryUtil.register(JournalFeedImpl.class, "JournalFeed");
-		XStreamAliasRegistryUtil.register(
-			JournalFolderImpl.class, "JournalFolder");
 	}
 
 	@Override
@@ -577,11 +567,11 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 		ModuleServiceLifecycle moduleServiceLifecycle) {
 	}
 
-	private DDMStructureLocalService _ddmStructureLocalService;
-	private DDMTemplateLocalService _ddmTemplateLocalService;
-	private JournalArticleLocalService _journalArticleLocalService;
-	private JournalContent _journalContent;
-	private JournalFeedLocalService _journalFeedLocalService;
-	private JournalFolderLocalService _journalFolderLocalService;
+	private volatile DDMStructureLocalService _ddmStructureLocalService;
+	private volatile DDMTemplateLocalService _ddmTemplateLocalService;
+	private volatile JournalArticleLocalService _journalArticleLocalService;
+	private volatile JournalContent _journalContent;
+	private volatile JournalFeedLocalService _journalFeedLocalService;
+	private volatile JournalFolderLocalService _journalFolderLocalService;
 
 }
