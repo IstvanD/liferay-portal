@@ -18,6 +18,10 @@ import com.liferay.calendar.constants.CalendarActionKeys;
 import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.model.CalendarBooking;
 import com.liferay.calendar.model.CalendarResource;
+import com.liferay.calendar.recurrence.PositionalWeekday;
+import com.liferay.calendar.recurrence.Recurrence;
+import com.liferay.calendar.recurrence.RecurrenceSerializer;
+import com.liferay.calendar.recurrence.Weekday;
 import com.liferay.calendar.service.CalendarBookingServiceUtil;
 import com.liferay.calendar.service.CalendarResourceLocalServiceUtil;
 import com.liferay.calendar.service.permission.CalendarPermission;
@@ -27,10 +31,12 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.service.WorkflowDefinitionLinkLocalServiceUtil;
@@ -199,6 +205,33 @@ public class CalendarUtil {
 		return orderByComparator;
 	}
 
+	public static List<PositionalWeekday> getPositionalWeekdaysOnTimeZone(
+		List<Weekday> weekdays, int hour, int minute, TimeZone originTimeZone,
+		TimeZone destinationTimeZone) {
+
+		List<PositionalWeekday> positionalWeekdays = new ArrayList<>();
+
+		for (Weekday weekday : weekdays) {
+			java.util.Calendar jCalendar = CalendarFactoryUtil.getCalendar(
+				originTimeZone);
+
+			jCalendar = JCalendarUtil.toMidnightJCalendar(jCalendar);
+			jCalendar.set(java.util.Calendar.HOUR, hour);
+			jCalendar.set(java.util.Calendar.MINUTE, minute);
+			jCalendar.set(
+				java.util.Calendar.DAY_OF_WEEK, weekday.getCalendarWeekday());
+
+			jCalendar = JCalendarUtil.getJCalendar(
+				jCalendar, destinationTimeZone);
+
+			weekday = Weekday.getWeekday(jCalendar);
+
+			positionalWeekdays.add(new PositionalWeekday(weekday, 0));
+		}
+
+		return positionalWeekdays;
+	}
+
 	public static String[] splitKeywords(String keywords) {
 		Set<String> keywordsSet = new LinkedHashSet<>();
 
@@ -228,8 +261,9 @@ public class CalendarUtil {
 	}
 
 	public static JSONObject toCalendarBookingJSONObject(
-		ThemeDisplay themeDisplay, CalendarBooking calendarBooking,
-		TimeZone timeZone) {
+			ThemeDisplay themeDisplay, CalendarBooking calendarBooking,
+			TimeZone timeZone)
+		throws PortalException {
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
@@ -270,7 +304,7 @@ public class CalendarUtil {
 		jsonObject.put(
 			"parentCalendarBookingId",
 			calendarBooking.getParentCalendarBookingId());
-		jsonObject.put("recurrence", calendarBooking.getRecurrence());
+
 		jsonObject.put("secondReminder", calendarBooking.getSecondReminder());
 		jsonObject.put(
 			"secondReminderType", calendarBooking.getSecondReminder());
@@ -279,6 +313,32 @@ public class CalendarUtil {
 			calendarBooking.getStartTime(), timeZone);
 
 		_addTimeProperties(jsonObject, "startTime", startTimeJCalendar);
+
+		String recurrence = calendarBooking.getRecurrence();
+
+		if (Validator.isNotNull(recurrence)) {
+			Recurrence recurrenceObj = RecurrenceSerializer.deserialize(
+				recurrence);
+
+			List<Weekday> weekdays = new ArrayList<>();
+			List<PositionalWeekday> positionalWeekdays =
+				recurrenceObj.getPositionalWeekdays();
+
+			for (PositionalWeekday positionalWeekday : positionalWeekdays) {
+				weekdays.add(positionalWeekday.getWeekday());
+			}
+
+			positionalWeekdays = getPositionalWeekdaysOnTimeZone(
+				weekdays, startTimeJCalendar.get(java.util.Calendar.HOUR),
+				startTimeJCalendar.get(java.util.Calendar.MINUTE),
+				calendarBooking.getTimeZone(), timeZone);
+
+			recurrenceObj.setPositionalWeekdays(positionalWeekdays);
+
+			recurrence = RecurrenceSerializer.serialize(recurrenceObj);
+		}
+
+		jsonObject.put("recurrence", recurrence);
 
 		jsonObject.put("status", calendarBooking.getStatus());
 		jsonObject.put(
@@ -308,8 +368,9 @@ public class CalendarUtil {
 	}
 
 	public static JSONArray toCalendarBookingsJSONArray(
-		ThemeDisplay themeDisplay, List<CalendarBooking> calendarBookings,
-		TimeZone timeZone) {
+			ThemeDisplay themeDisplay, List<CalendarBooking> calendarBookings,
+			TimeZone timeZone)
+		throws PortalException {
 
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
