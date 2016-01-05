@@ -647,7 +647,7 @@ public class PortletFileRepositoryImpl implements PortletFileRepository {
 
 	@Override
 	public Folder movePortletFolder(
-			long userId, long folderId, long parentFolderId,
+			long groupId, long userId, long folderId, long parentFolderId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -657,7 +657,7 @@ public class PortletFileRepositoryImpl implements PortletFileRepository {
 			DLAppHelperThreadLocal.setEnabled(false);
 
 			LocalRepository localRepository =
-				RepositoryProviderUtil.getFolderLocalRepository(parentFolderId);
+				RepositoryProviderUtil.getLocalRepository(groupId);
 
 			return localRepository.moveFolder(
 				userId, folderId, parentFolderId, serviceContext);
