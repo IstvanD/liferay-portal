@@ -546,10 +546,15 @@ public class DLFileEntryLocalServiceImpl
 
 			serviceContext.setAttribute("validateDDMFormValues", Boolean.FALSE);
 
-			copyFileEntryMetadata(
-				dlFileEntry.getCompanyId(), dlFileVersion.getFileEntryTypeId(),
-				fileEntryId, dlFileVersionId, dlFileVersion.getFileVersionId(),
-				serviceContext);
+			long fileEntryTypeId = GetterUtil.getLong(
+				serviceContext.getAttribute("fileEntryTypeId"));
+
+			if (fileEntryTypeId == dlFileVersion.getFileEntryTypeId()) {
+				copyFileEntryMetadata(dlFileEntry.getCompanyId(),
+					dlFileVersion.getFileEntryTypeId(), fileEntryId,
+					dlFileVersionId, dlFileVersion.getFileVersionId(),
+					serviceContext);
+			}
 
 			serviceContext.setAttribute("validateDDMFormValues", Boolean.TRUE);
 		}
