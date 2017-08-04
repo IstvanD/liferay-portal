@@ -27,19 +27,12 @@ public class ClamAntivirusScannerImpl extends BaseFileAntivirusScanner {
 
 	@Override
 	public void scan(File file) throws AntivirusScannerException {
-		Process process = null;
-
 		try {
-			ProcessBuilder processBuilder = new ProcessBuilder(
-				"clamscan", "--stdout", "--no-summary", file.getAbsolutePath());
+			int exitValue = scanProcess("clamdscan", file);
 
-			processBuilder.redirectErrorStream(true);
-
-			process = processBuilder.start();
-
-			process.waitFor();
-
-			int exitValue = process.exitValue();
+			if(exitValue >= 2) {
+				exitValue = scanProcess("clamscan", file);
+			}
 
 			if (exitValue == 1) {
 				throw new AntivirusScannerException(
@@ -55,11 +48,30 @@ public class ClamAntivirusScannerImpl extends BaseFileAntivirusScanner {
 			throw new AntivirusScannerException(
 				AntivirusScannerException.PROCESS_FAILURE, e);
 		}
+	}
+
+	private int scanProcess(String command, File file) 
+		throws IOException, InterruptedException {
+
+		Process process = null;
+
+		try {
+			ProcessBuilder processBuilder = new ProcessBuilder(
+					command, "--stdout", "--no-summary", file.getAbsolutePath());
+	
+			processBuilder.redirectErrorStream(true);
+	
+			process = processBuilder.start();
+	
+			process.waitFor();
+	
+			return process.exitValue();
+		}
 		finally {
 			if (process != null) {
 				process.destroy();
 			}
 		}
-	}
 
+	}
 }
