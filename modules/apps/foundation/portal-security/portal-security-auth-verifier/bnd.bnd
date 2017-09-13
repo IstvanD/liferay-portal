@@ -1,12 +1,30 @@
 Bundle-Name: Liferay Portal Security Auth Verifier
 Bundle-SymbolicName: com.liferay.portal.security.auth.verifier
-Bundle-Version: 2.1.3
+Bundle-Version: 2.2.0
 Export-Package:\
 	com.liferay.portal.security.auth.verifier.basic.auth.header,\
 	com.liferay.portal.security.auth.verifier.digest.authentication,\
+	com.liferay.portal.security.auth.verifier.image.request,\
 	com.liferay.portal.security.auth.verifier.portal.session,\
 	com.liferay.portal.security.auth.verifier.request.parameter,\
 	com.liferay.portal.security.auth.verifier.tunnel
+Import-Package:\
+	!com.google.common.collect.*,\
+	!com.google.gson.*,\
+	\
+	!net.oauth.jsontoken.*,\
+	\
+	!org.apache.http.*,\
+	\
+	!org.joda.time.*,\
+	\
+	*
 Liferay-Releng-Module-Group-Description:
 Liferay-Releng-Module-Group-Title: Security Frameworks
+-includeresource:\
+@google-collections-[0-9]*.jar,\
+@gson-[0-9]*.jar,\
+@httpclient-[0-9]*.jar,\
+@joda-time-[0-9]*.jar,\
+@jsontoken-[0-9]*.jar
 -metatype-inherit: True
