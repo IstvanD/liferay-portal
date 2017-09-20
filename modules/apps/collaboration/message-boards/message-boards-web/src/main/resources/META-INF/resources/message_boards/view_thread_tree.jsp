@@ -65,6 +65,12 @@ MBMessageDisplay messageDisplay = (MBMessageDisplay)request.getAttribute(WebKeys
 
 	depth++;
 
+	String articleCssClass = StringPool.BLANK;
+
+	if (depth < 4) {
+		articleCssClass = "card-tab message-container";
+	}
+
 	MBMessageIterator mbMessageIterator = new MBMessageIteratorImpl(messages, range[0], range[1]);
 
 	while (mbMessageIterator.hasNext()) {
@@ -89,7 +95,7 @@ MBMessageDisplay messageDisplay = (MBMessageDisplay)request.getAttribute(WebKeys
 		request.setAttribute(WebKeys.MESSAGE_BOARDS_TREE_WALKER_THREAD, thread);
 	%>
 
-		<div class="card-tab message-container">
+		<div class="<%= articleCssClass %>">
 			<liferay-util:include page="/message_boards/view_thread_tree.jsp" servletContext="<%= application %>" />
 		</div>
 
