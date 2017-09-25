@@ -17,7 +17,6 @@ package com.liferay.document.library.document.conversion.internal.auth.verifier;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifier;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.security.auth.AuthVerifierPipeline;
-import com.liferay.portal.security.auth.verifier.image.request.ImageRequestAuthVerifier;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
