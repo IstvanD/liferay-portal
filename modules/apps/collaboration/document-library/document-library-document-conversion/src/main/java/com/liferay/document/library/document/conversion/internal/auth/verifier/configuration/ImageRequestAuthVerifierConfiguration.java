@@ -21,11 +21,8 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 /**
  * @author Istvan Andras Dezsi
  */
-@ExtendedObjectClassDefinition(
-	category = "foundation", factoryInstanceLabelAttribute = "urlsIncludes"
-)
+@ExtendedObjectClassDefinition(category = "foundation")
 @Meta.OCD(
-	factory = true,
 	id = "com.liferay.document.library.document.conversion.internal.auth.verifier.configuration.ImageRequestAuthVerifierConfiguration",
 	localization = "content/Language",
 	name = "image-request-auth-verifier-configuration-name"
