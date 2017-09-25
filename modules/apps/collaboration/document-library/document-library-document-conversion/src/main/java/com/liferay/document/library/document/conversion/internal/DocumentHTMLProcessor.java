@@ -14,12 +14,12 @@
 
 package com.liferay.document.library.document.conversion.internal;
 
+import com.liferay.document.library.document.conversion.internal.auth.verifier.ImageRequestTokenUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.auth.verifier.image.request.ImageRequestTokenUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
