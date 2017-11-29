@@ -14,10 +14,11 @@
 
 package com.liferay.document.library.web.internal.upload;
 
+import com.liferay.asset.kernel.exception.AssetCategoryException;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyService;
-import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.util.DLValidator;
@@ -87,53 +88,14 @@ public class DLUploadFileEntryHandler implements UploadFileEntryHandler {
 					themeDisplay.getScopeGroupId(), folderId, curFileName));
 
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
-				DLFileEntry.class.getName(), uploadPortletRequest);
+				DLFileEntryConstants.getClassName(), uploadPortletRequest);
 
-			_addRequiredAssetCategories(
-				themeDisplay.getScopeGroupId(), serviceContext);
+			_populateServiceContext(serviceContext);
 
 			return _dlAppService.addFileEntry(
 				themeDisplay.getScopeGroupId(), folderId, uniqueFileName,
 				contentType, uniqueFileName, StringPool.BLANK, StringPool.BLANK,
 				inputStream, size, serviceContext);
-		}
-	}
-
-	private void _addRequiredAssetCategories(
-		long groupId, ServiceContext serviceContext) {
-
-		long classNameId = _classNameLocalService.getClassNameId(
-			DLFileEntry.class.getName());
-
-		long classTypePK =
-			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT;
-
-		try {
-			List<AssetVocabulary> assetVocabularies =
-				_assetVocabularyService.getGroupVocabularies(groupId, false);
-
-			List<Long> assetCategoryIdsList = new ArrayList<>();
-
-			for (AssetVocabulary assetVocabulary : assetVocabularies) {
-				if (assetVocabulary.isRequired(classNameId, classTypePK)) {
-					List<AssetCategory> assetCategories =
-						assetVocabulary.getCategories();
-
-					for (AssetCategory assetCategory : assetCategories) {
-						assetCategoryIdsList.add(assetCategory.getCategoryId());
-					}
-				}
-			}
-
-			long[] assetCategoryIdsArray = ArrayUtil.toLongArray(
-				assetCategoryIdsList);
-
-			serviceContext.setAssetCategoryIds(assetCategoryIdsArray);
-		}
-		catch (PortalException pe) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(pe, pe);
-			}
 		}
 	}
 
@@ -154,6 +116,45 @@ public class DLUploadFileEntryHandler implements UploadFileEntryHandler {
 
 			return false;
 		}
+	}
+
+	private void _populateServiceContext(ServiceContext serviceContext)
+		throws PortalException {
+
+		long classNameId = _classNameLocalService.getClassNameId(
+			DLFileEntryConstants.getClassName());
+
+		List<AssetVocabulary> assetVocabularies =
+			_assetVocabularyService.getGroupVocabularies(
+				serviceContext.getScopeGroupId(), false);
+
+		List<Long> assetCategoryIdsList = new ArrayList<>();
+
+		for (AssetVocabulary assetVocabulary : assetVocabularies) {
+			if (assetVocabulary.isRequired(
+				classNameId,
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT)) {
+
+				List<AssetCategory> assetCategories =
+					assetVocabulary.getCategories();
+
+				if (assetCategories.isEmpty()) {
+					throw new AssetCategoryException(
+						assetVocabulary,
+						AssetCategoryException.AT_LEAST_ONE_CATEGORY);
+				}
+
+				for (AssetCategory assetCategory : assetCategories) {
+					assetCategoryIdsList.add(assetCategory.getCategoryId());
+				}
+			}
+		}
+
+		long[] assetCategoryIdsArray = ArrayUtil.toArray(
+			assetCategoryIdsList.toArray(
+				new Long[assetCategoryIdsList.size()]));
+
+		serviceContext.setAssetCategoryIds(assetCategoryIdsArray);
 	}
 
 	private static final String _PARAMETER_NAME = "imageSelectorFileName";

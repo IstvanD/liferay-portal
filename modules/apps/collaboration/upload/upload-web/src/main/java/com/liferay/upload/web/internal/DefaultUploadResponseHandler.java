@@ -14,6 +14,8 @@
 
 package com.liferay.upload.web.internal;
 
+import com.liferay.asset.kernel.exception.AssetCategoryException;
+import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.document.library.kernel.antivirus.AntivirusScannerException;
 import com.liferay.document.library.kernel.exception.FileNameException;
 import com.liferay.document.library.kernel.exception.FileSizeException;
@@ -51,7 +53,8 @@ public class DefaultUploadResponseHandler implements UploadResponseHandler {
 
 		jsonObject.put("success", Boolean.FALSE);
 
-		if (pe instanceof AntivirusScannerException ||
+		if (pe instanceof AssetCategoryException ||
+			pe instanceof AntivirusScannerException ||
 			pe instanceof FileNameException ||
 			pe instanceof FileSizeException ||
 			pe instanceof UploadRequestSizeException) {
@@ -63,7 +66,29 @@ public class DefaultUploadResponseHandler implements UploadResponseHandler {
 				(ThemeDisplay)portletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
 
-			if (pe instanceof AntivirusScannerException) {
+			if (pe instanceof AssetCategoryException &&
+				((AssetCategoryException)pe).getType() ==
+					AssetCategoryException.AT_LEAST_ONE_CATEGORY) {
+
+				errorType =
+					ServletResponseConstants.SC_PORTAL_EXCEPTION;
+
+				AssetCategoryException ace = (AssetCategoryException)pe;
+
+				AssetVocabulary assetVocabulary = ace.getVocabulary();
+
+				String vocabularyTitle = StringPool.BLANK;
+
+				if (assetVocabulary != null) {
+					vocabularyTitle = assetVocabulary.getTitle(
+						themeDisplay.getLocale());
+				}
+
+				errorMessage = themeDisplay.translate(
+					"please-select-at-least-one-category-for-x",
+					vocabularyTitle);
+			}
+			else if (pe instanceof AntivirusScannerException) {
 				errorType =
 					ServletResponseConstants.SC_FILE_ANTIVIRUS_EXCEPTION;
 				AntivirusScannerException ase = (AntivirusScannerException)pe;
