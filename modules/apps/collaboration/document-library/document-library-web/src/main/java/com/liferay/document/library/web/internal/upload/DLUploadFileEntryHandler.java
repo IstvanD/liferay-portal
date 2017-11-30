@@ -14,7 +14,12 @@
 
 package com.liferay.document.library.web.internal.upload;
 
-import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.asset.kernel.exception.AssetCategoryException;
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.service.AssetVocabularyService;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.util.DLValidator;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -22,10 +27,12 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -35,6 +42,9 @@ import com.liferay.upload.UploadFileEntryHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -78,7 +88,9 @@ public class DLUploadFileEntryHandler implements UploadFileEntryHandler {
 					themeDisplay.getScopeGroupId(), folderId, curFileName));
 
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
-				DLFileEntry.class.getName(), uploadPortletRequest);
+				DLFileEntryConstants.getClassName(), uploadPortletRequest);
+
+			_populateServiceContext(serviceContext);
 
 			return _dlAppService.addFileEntry(
 				themeDisplay.getScopeGroupId(), folderId, uniqueFileName,
@@ -106,10 +118,55 @@ public class DLUploadFileEntryHandler implements UploadFileEntryHandler {
 		}
 	}
 
+	private void _populateServiceContext(ServiceContext serviceContext)
+		throws PortalException {
+
+		long classNameId = _classNameLocalService.getClassNameId(
+			DLFileEntryConstants.getClassName());
+
+		List<AssetVocabulary> assetVocabularies =
+			_assetVocabularyService.getGroupVocabularies(
+				serviceContext.getScopeGroupId(), false);
+
+		List<Long> assetCategoryIdsList = new ArrayList<>();
+
+		for (AssetVocabulary assetVocabulary : assetVocabularies) {
+			if (assetVocabulary.isRequired(
+				classNameId,
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT)) {
+
+				List<AssetCategory> assetCategories =
+					assetVocabulary.getCategories();
+
+				if (assetCategories.isEmpty()) {
+					throw new AssetCategoryException(
+						assetVocabulary,
+						AssetCategoryException.AT_LEAST_ONE_CATEGORY);
+				}
+
+				for (AssetCategory assetCategory : assetCategories) {
+					assetCategoryIdsList.add(assetCategory.getCategoryId());
+				}
+			}
+		}
+
+		long[] assetCategoryIdsArray = ArrayUtil.toArray(
+			assetCategoryIdsList.toArray(
+				new Long[assetCategoryIdsList.size()]));
+
+		serviceContext.setAssetCategoryIds(assetCategoryIdsArray);
+	}
+
 	private static final String _PARAMETER_NAME = "imageSelectorFileName";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLUploadFileEntryHandler.class);
+
+	@Reference
+	private AssetVocabularyService _assetVocabularyService;
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
 	private DLAppService _dlAppService;
