@@ -49,6 +49,7 @@ import com.liferay.portal.kernel.service.SubscriptionLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalServiceUtil;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.File;
@@ -840,7 +841,9 @@ public class SubscriptionSender implements Serializable {
 	}
 
 	protected void sendEmailNotification(User user) throws Exception {
-		if (UserNotificationManagerUtil.isDeliver(
+		if (PrefsPropsUtil.getBoolean(companyId,
+				PropsKeys.DISCUSSION_EMAIL_COMMENTS_ADDED_ENABLED) &&
+			UserNotificationManagerUtil.isDeliver(
 				user.getUserId(), portletId, _notificationClassNameId,
 				_notificationType,
 				UserNotificationDeliveryConstants.TYPE_EMAIL)) {

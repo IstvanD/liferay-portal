@@ -256,13 +256,6 @@ public class SubscriptionMBMessageLocalServiceWrapper
 			long userId, MBMessage message, ServiceContext serviceContext)
 		throws PortalException {
 
-		if (!PrefsPropsUtil.getBoolean(
-				message.getCompanyId(),
-				PropsKeys.DISCUSSION_EMAIL_COMMENTS_ADDED_ENABLED)) {
-
-			return;
-		}
-
 		MBDiscussion mbDiscussion =
 			_mbDiscussionLocalService.getThreadDiscussion(
 				message.getThreadId());
