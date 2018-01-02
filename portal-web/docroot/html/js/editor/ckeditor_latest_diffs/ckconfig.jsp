@@ -105,7 +105,7 @@ String contentsLanguageDir = LanguageUtil.get(contentsLocale, "lang.dir");
 
 	config.entities = false;
 
-	config.extraPlugins = 'a11yhelpbtn,media,scayt,wsc';
+	config.extraPlugins = 'a11yhelpbtn,imagerotate,media,scayt,wsc';
 
 	<c:if test="<%= inlineEdit %>">
 		config.extraPlugins += ',ajaxsave,restore';
