@@ -14,6 +14,7 @@
 
 package com.liferay.message.boards.internal.service;
 
+import com.liferay.message.boards.internal.util.MBDiscussionSubcriptionSender;
 import com.liferay.message.boards.internal.util.MBSubscriptionSender;
 import com.liferay.message.boards.internal.util.MailingListThreadLocal;
 import com.liferay.message.boards.kernel.model.MBCategory;
@@ -256,13 +257,6 @@ public class SubscriptionMBMessageLocalServiceWrapper
 			long userId, MBMessage message, ServiceContext serviceContext)
 		throws PortalException {
 
-		if (!PrefsPropsUtil.getBoolean(
-				message.getCompanyId(),
-				PropsKeys.DISCUSSION_EMAIL_COMMENTS_ADDED_ENABLED)) {
-
-			return;
-		}
-
 		MBDiscussion mbDiscussion =
 			_mbDiscussionLocalService.getThreadDiscussion(
 				message.getThreadId());
@@ -293,7 +287,8 @@ public class SubscriptionMBMessageLocalServiceWrapper
 		String body = PrefsPropsUtil.getContent(
 			message.getCompanyId(), PropsKeys.DISCUSSION_EMAIL_BODY);
 
-		SubscriptionSender subscriptionSender = new SubscriptionSender();
+		SubscriptionSender subscriptionSender =
+			new MBDiscussionSubcriptionSender();
 
 		subscriptionSender.setBody(body);
 		subscriptionSender.setCompanyId(message.getCompanyId());
