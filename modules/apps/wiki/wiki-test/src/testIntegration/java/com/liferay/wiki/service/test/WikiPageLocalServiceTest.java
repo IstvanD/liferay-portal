@@ -62,7 +62,6 @@ import com.liferay.wiki.exception.PageTitleException;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
-import com.liferay.wiki.util.comparator.PageModifiedDateComparator;
 import com.liferay.wiki.util.test.WikiTestUtil;
 
 import java.io.Serializable;
@@ -670,10 +669,6 @@ public class WikiPageLocalServiceTest {
 		recentPages = WikiPageLocalServiceUtil.getRecentChanges(
 			_group.getGroupId(), _node.getNodeId(), QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS);
-
-		OrderByComparator<WikiPage> obc = new PageModifiedDateComparator(false);
-
-		recentPages = ListUtil.sort(recentPages, obc);
 
 		WikiPage recentPage1 = recentPages.get(0);
 		WikiPage recentPage2 = recentPages.get(1);
