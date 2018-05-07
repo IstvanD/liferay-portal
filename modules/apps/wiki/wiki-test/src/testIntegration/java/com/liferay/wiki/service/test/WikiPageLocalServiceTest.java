@@ -561,11 +561,11 @@ public class WikiPageLocalServiceTest {
 	}
 
 	@Test
-	public void testGetRecentChanges() throws Exception {
+	public void testGetRecentChangesWithANonRecentCreatedPage() throws Exception {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
-		WikiTestUtil.addPage(
+		WikiPage page = WikiTestUtil.addPage(
 			TestPropsValues.getUserId(), _node.getNodeId(), "Page1",
 			RandomTestUtil.randomString(), true, serviceContext);
 
@@ -590,7 +590,32 @@ public class WikiPageLocalServiceTest {
 
 		WikiPage recentPage = recentPages.get(0);
 
-		Assert.assertEquals("Page1", recentPage.getTitle());
+		Assert.assertEquals(page.getPageId(), recentPage.getPageId());
+	}
+
+	@Test
+	public void testGetRecentChangesWithAnUpdatedNonRecentCreatedPage()
+		throws Exception {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		WikiTestUtil.addPage(
+			TestPropsValues.getUserId(), _node.getNodeId(), "Page1",
+			RandomTestUtil.randomString(), true, serviceContext);
+
+		Calendar cal = CalendarFactoryUtil.getCalendar();
+
+		cal.add(Calendar.WEEK_OF_YEAR, -2);
+
+		Date twoWeeksBefore = cal.getTime();
+
+		serviceContext.setCreateDate(twoWeeksBefore);
+		serviceContext.setModifiedDate(twoWeeksBefore);
+
+		WikiPage page2 = WikiTestUtil.addPage(
+			TestPropsValues.getUserId(), _node.getNodeId(), "Page2",
+			RandomTestUtil.randomString(), true, serviceContext);
 
 		WikiTestUtil.updatePage(page2);
 
@@ -610,7 +635,7 @@ public class WikiPageLocalServiceTest {
 			TestPropsValues.getUserId(), _node.getNodeId(), "Page1",
 			RandomTestUtil.randomString(), true, serviceContext);
 
-		WikiTestUtil.addPage(
+		WikiPage page2 = WikiTestUtil.addPage(
 			TestPropsValues.getUserId(), _node.getNodeId(), "Page2",
 			RandomTestUtil.randomString(), true, serviceContext);
 
@@ -620,11 +645,25 @@ public class WikiPageLocalServiceTest {
 
 		Assert.assertEquals(recentPages.toString(), 2, recentPages.size());
 
-		WikiPage firstRecentPage = recentPages.get(0);
-		WikiPage secondRecentPage = recentPages.get(1);
+		WikiPage recentPage1 = recentPages.get(0);
+		WikiPage recentPage2 = recentPages.get(1);
 
-		Assert.assertEquals("Page2", firstRecentPage.getTitle());
-		Assert.assertEquals("Page1", secondRecentPage.getTitle());
+		Assert.assertEquals(page2.getPageId(), recentPage1.getPageId());
+		Assert.assertEquals(page1.getPageId(), recentPage2.getPageId());
+	}
+
+	@Test
+	public void testOrderByModifiedDateWithModifiedPages() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		WikiPage page1 = WikiTestUtil.addPage(
+			TestPropsValues.getUserId(), _node.getNodeId(), "Page1",
+			RandomTestUtil.randomString(), true, serviceContext);
+
+		WikiPage page2 = WikiTestUtil.addPage(
+			TestPropsValues.getUserId(), _node.getNodeId(), "Page2",
+			RandomTestUtil.randomString(), true, serviceContext);
 
 		WikiTestUtil.updatePage(page1);
 
@@ -636,11 +675,11 @@ public class WikiPageLocalServiceTest {
 
 		recentPages = ListUtil.sort(recentPages, obc);
 
-		firstRecentPage = recentPages.get(0);
-		secondRecentPage = recentPages.get(1);
+		WikiPage recentPage1 = recentPages.get(0);
+		WikiPage recentPage2 = recentPages.get(1);
 
-		Assert.assertEquals("Page1", firstRecentPage.getTitle());
-		Assert.assertEquals("Page2", secondRecentPage.getTitle());
+		Assert.assertEquals(page1.getPageId(), recentPage1.getPageId());
+		Assert.assertEquals(page2.getPageId(), recentPage2.getPageId());
 	}
 
 	@Test
