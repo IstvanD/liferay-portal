@@ -404,7 +404,9 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 		String redirect = _portal.escapeRedirect(
 			ParamUtil.getString(actionRequest, "redirect"));
 
-		if (Validator.isNotNull(redirect)) {
+		if (Validator.isNotNull(redirect) &&
+			(user.getStatus() == WorkflowConstants.STATUS_APPROVED)) {
+
 			HttpServletResponse response = _portal.getHttpServletResponse(
 				actionResponse);
 
