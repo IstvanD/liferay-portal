@@ -16,6 +16,7 @@ package com.liferay.login.web.internal.portlet.action;
 
 import com.liferay.captcha.configuration.CaptchaConfiguration;
 import com.liferay.captcha.util.CaptchaUtil;
+import com.liferay.login.PostCreateAccountProcessor;
 import com.liferay.login.web.internal.constants.LoginPortletKeys;
 import com.liferay.login.web.internal.portlet.util.LoginUtil;
 import com.liferay.portal.kernel.captcha.CaptchaConfigurationException;
@@ -398,17 +399,17 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 			login = user.getEmailAddress();
 		}
 
-		HttpServletRequest request = _portal.getHttpServletRequest(
-			actionRequest);
-
 		String redirect = _portal.escapeRedirect(
 			ParamUtil.getString(actionRequest, "redirect"));
 
+		HttpServletRequest request = _portal.getHttpServletRequest(
+			actionRequest);
+
+		HttpServletResponse response = _portal.getHttpServletResponse(
+			actionResponse);
+
 		if (Validator.isNotNull(redirect) &&
 			(user.getStatus() == WorkflowConstants.STATUS_APPROVED)) {
-
-			HttpServletResponse response = _portal.getHttpServletResponse(
-				actionResponse);
 
 			_authenticatedSessionManager.login(
 				request, response, login, password, false, null);
@@ -421,6 +422,8 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 
 			redirect = loginURL.toString();
 		}
+
+		_postCreateAccountProcessor.process(request, response);
 
 		actionResponse.sendRedirect(redirect);
 	}
@@ -598,6 +601,9 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private PostCreateAccountProcessor _postCreateAccountProcessor;
 
 	private UserLocalService _userLocalService;
 	private UserService _userService;
