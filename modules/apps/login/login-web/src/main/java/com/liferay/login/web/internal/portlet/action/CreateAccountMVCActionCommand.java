@@ -423,6 +423,8 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 			redirect = loginURL.toString();
 		}
 
+		request.setAttribute(WebKeys.USER, user);
+
 		_postCreateAccountProcessor.process(request, response);
 
 		actionResponse.sendRedirect(redirect);

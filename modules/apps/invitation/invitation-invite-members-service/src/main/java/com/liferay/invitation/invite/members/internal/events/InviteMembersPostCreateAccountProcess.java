@@ -15,10 +15,15 @@
 package com.liferay.invitation.invite.members.internal.events;
 
 import com.liferay.invitation.invite.members.constants.InviteMembersPortletKeys;
+import com.liferay.invitation.invite.members.exception.MemberRequestAlreadyUsedException;
+import com.liferay.invitation.invite.members.exception.MemberRequestInvalidUserException;
 import com.liferay.invitation.invite.members.service.MemberRequestLocalService;
 import com.liferay.login.PostCreateAccountProcess;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
@@ -53,14 +58,40 @@ public class InviteMembersPostCreateAccountProcess
 			request, portletNamespace.concat("key"));
 
 		if (Validator.isNull(memberRequestKey)) {
-			return;
+			String redirect = ParamUtil.getString(request, "redirect");
+
+			ppid = _http.getParameter(redirect, "p_p_id", false);
+
+			portletNamespace = _portal.getPortletNamespace(ppid);
+
+			memberRequestKey = _http.getParameter(
+				redirect, portletNamespace.concat("key"), false);
+
+			if (Validator.isNull(memberRequestKey)) {
+				return;
+			}
 		}
 
 		User user = _portal.getUser(request);
 
-		_memberRequestLocalService.updateMemberRequest(
-			memberRequestKey, user.getUserId());
+		try {
+			_memberRequestLocalService.updateMemberRequest(
+				memberRequestKey, user.getUserId());
+		}
+		catch (MemberRequestAlreadyUsedException |
+			   MemberRequestInvalidUserException e) {
+
+			if (_log.isWarnEnabled()) {
+				_log.warn("The membership request is already processed.");
+			}
+		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		InviteMembersPostCreateAccountProcess.class);
+
+	@Reference
+	private Http _http;
 
 	@Reference
 	private MemberRequestLocalService _memberRequestLocalService;
