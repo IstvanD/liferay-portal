@@ -25,13 +25,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Roberto Díaz
  */
-@Component(immediate = true, service = PostCreateAccountProcessor.class)
 public class PostCreateAccountProcessor {
 
 	public void process(
@@ -53,8 +51,8 @@ public class PostCreateAccountProcessor {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_serviceTrackerList = ServiceTrackerListFactory.open(bundleContext,
-			PostCreateAccountProcess.class);
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			bundleContext, PostCreateAccountProcess.class);
 	}
 
 	@Deactivate
@@ -64,7 +62,8 @@ public class PostCreateAccountProcessor {
 		_serviceTrackerList = null;
 	}
 
-	private Log _log = LogFactoryUtil.getLog(PostCreateAccountProcessor.class);
+	private static final Log _log = LogFactoryUtil.getLog(
+		PostCreateAccountProcessor.class);
 
 	private static
 		ServiceTrackerList<PostCreateAccountProcess, PostCreateAccountProcess>

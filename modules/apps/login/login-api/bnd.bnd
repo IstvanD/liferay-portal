@@ -1,4 +1,4 @@
 Bundle-Name: Liferay Login Api
-Bundle-SymbolicName: com.liferay.login
+Bundle-SymbolicName: com.liferay.login.api
 Bundle-Version: 1.0.0
 Export-Package: com.liferay.login
