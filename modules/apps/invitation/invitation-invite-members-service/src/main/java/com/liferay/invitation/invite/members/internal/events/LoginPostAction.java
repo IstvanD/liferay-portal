@@ -15,10 +15,12 @@
 package com.liferay.invitation.invite.members.internal.events;
 
 import com.liferay.invitation.invite.members.constants.InviteMembersPortletKeys;
-import com.liferay.login.PostCreateAccountProcess;
+import com.liferay.login.events.CreateAccountActionProcess;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.events.LifecycleAction;
 import com.liferay.portal.kernel.events.LifecycleEvent;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 
 import org.osgi.service.component.annotations.Component;
@@ -39,8 +41,11 @@ public class LoginPostAction implements LifecycleAction {
 		throws ActionException {
 
 		try {
-			_postCreateAccountProcess.process(
-				lifecycleEvent.getRequest(), lifecycleEvent.getResponse());
+			User user = _portal.getUser(lifecycleEvent.getRequest());
+
+			_createAccountActionProcess.process(
+				lifecycleEvent.getRequest(), lifecycleEvent.getResponse(), null,
+				user, null);
 		}
 		catch (Exception e) {
 			throw new ActionException(e);
@@ -48,9 +53,14 @@ public class LoginPostAction implements LifecycleAction {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + InviteMembersPortletKeys.INVITE_MEMBERS +
-			")", unbind = "-"
+		target =
+			"(javax.portlet.name=" + InviteMembersPortletKeys.INVITE_MEMBERS +
+				")",
+		unbind = "-"
 	)
-	private PostCreateAccountProcess _postCreateAccountProcess;
+	private CreateAccountActionProcess _createAccountActionProcess;
+
+	@Reference
+	private Portal _portal;
 
 }

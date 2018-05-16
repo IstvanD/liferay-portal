@@ -15,14 +15,11 @@
 package com.liferay.invitation.invite.members.internal.events;
 
 import com.liferay.invitation.invite.members.constants.InviteMembersPortletKeys;
-import com.liferay.invitation.invite.members.exception.MemberRequestAlreadyUsedException;
-import com.liferay.invitation.invite.members.exception.MemberRequestInvalidUserException;
 import com.liferay.invitation.invite.members.service.MemberRequestLocalService;
-import com.liferay.login.PostCreateAccountProcess;
+import com.liferay.login.events.CreateAccountActionProcess;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -40,14 +37,15 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	immediate = true,
 	property = "javax.portlet.name=" + InviteMembersPortletKeys.INVITE_MEMBERS,
-	service = PostCreateAccountProcess.class
+	service = CreateAccountActionProcess.class
 )
-public class InviteMembersPostCreateAccountProcess
-	implements PostCreateAccountProcess {
+public class InviteMembersCreateAccountActionProcess
+	implements CreateAccountActionProcess {
 
 	@Override
 	public void process(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest request, HttpServletResponse response,
+			ThemeDisplay themeDisplay, User user, String password)
 		throws PortalException {
 
 		String ppid = ParamUtil.getString(request, "p_p_id");
@@ -72,23 +70,9 @@ public class InviteMembersPostCreateAccountProcess
 			}
 		}
 
-		User user = _portal.getUser(request);
-
-		try {
-			_memberRequestLocalService.updateMemberRequest(
-				memberRequestKey, user.getUserId());
-		}
-		catch (MemberRequestAlreadyUsedException |
-			   MemberRequestInvalidUserException e) {
-
-			if (_log.isWarnEnabled()) {
-				_log.warn("The membership request is already processed.");
-			}
-		}
+		_memberRequestLocalService.updateMemberRequest(
+			memberRequestKey, user.getUserId());
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		InviteMembersPostCreateAccountProcess.class);
 
 	@Reference
 	private Http _http;

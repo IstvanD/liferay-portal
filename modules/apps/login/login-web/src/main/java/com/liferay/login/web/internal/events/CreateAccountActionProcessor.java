@@ -12,34 +12,41 @@
  * details.
  */
 
-package com.liferay.login;
+package com.liferay.login.web.internal.events;
 
+import com.liferay.login.events.CreateAccountActionProcess;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Roberto Díaz
  */
-public class PostCreateAccountProcessor {
+@Component(service = CreateAccountActionProcessor.class)
+public class CreateAccountActionProcessor {
 
 	public void process(
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest request, HttpServletResponse response,
+		ThemeDisplay themeDisplay, User user, String password) {
 
-		for (PostCreateAccountProcess postCreateAccountProcess :
+		for (CreateAccountActionProcess createAccountActionProcess :
 				_serviceTrackerList) {
 
 			try {
-				postCreateAccountProcess.process(request, response);
+				createAccountActionProcess.process(
+					request, response, themeDisplay, user, password);
 			}
 			catch (PortalException pe) {
 				if (_log.isWarnEnabled()) {
@@ -52,7 +59,7 @@ public class PostCreateAccountProcessor {
 	@Activate
 	protected void activate(BundleContext bundleContext) {
 		_serviceTrackerList = ServiceTrackerListFactory.open(
-			bundleContext, PostCreateAccountProcess.class);
+			bundleContext, CreateAccountActionProcess.class);
 	}
 
 	@Deactivate
@@ -63,10 +70,10 @@ public class PostCreateAccountProcessor {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
-		PostCreateAccountProcessor.class);
+		CreateAccountActionProcessor.class);
 
 	private static
-		ServiceTrackerList<PostCreateAccountProcess, PostCreateAccountProcess>
+		ServiceTrackerList<CreateAccountActionProcess, CreateAccountActionProcess>
 			_serviceTrackerList;
 
 }

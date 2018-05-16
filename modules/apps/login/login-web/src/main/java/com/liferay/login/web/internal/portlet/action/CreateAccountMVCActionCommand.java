@@ -16,8 +16,8 @@ package com.liferay.login.web.internal.portlet.action;
 
 import com.liferay.captcha.configuration.CaptchaConfiguration;
 import com.liferay.captcha.util.CaptchaUtil;
-import com.liferay.login.PostCreateAccountProcessor;
 import com.liferay.login.web.internal.constants.LoginPortletKeys;
+import com.liferay.login.web.internal.events.CreateAccountActionProcessor;
 import com.liferay.login.web.internal.portlet.util.LoginUtil;
 import com.liferay.portal.kernel.captcha.CaptchaConfigurationException;
 import com.liferay.portal.kernel.captcha.CaptchaTextException;
@@ -423,9 +423,8 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 			redirect = loginURL.toString();
 		}
 
-		request.setAttribute(WebKeys.USER, user);
-
-		_postCreateAccountProcessor.process(request, response);
+		_createAccountActionProcessor.process(
+			request, response, themeDisplay, user, password);
 
 		actionResponse.sendRedirect(redirect);
 	}
@@ -596,6 +595,9 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 	@Reference
 	private ConfigurationProvider _configurationProvider;
 
+	@Reference
+	private CreateAccountActionProcessor _createAccountActionProcessor;
+
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
@@ -603,9 +605,6 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PostCreateAccountProcessor _postCreateAccountProcessor;
 
 	private UserLocalService _userLocalService;
 	private UserService _userService;

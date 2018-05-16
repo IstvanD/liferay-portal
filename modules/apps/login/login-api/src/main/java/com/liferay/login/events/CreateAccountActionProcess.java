@@ -12,9 +12,11 @@
  * details.
  */
 
-package com.liferay.login;
+package com.liferay.login.events;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,10 +24,11 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author Roberto Díaz
  */
-public interface PostCreateAccountProcess {
+public interface CreateAccountActionProcess {
 
 	public void process(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest request, HttpServletResponse response,
+			ThemeDisplay themeDisplay, User user, String password)
 		throws PortalException;
 
 }
