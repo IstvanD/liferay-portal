@@ -195,6 +195,15 @@ public class MemberRequestPersistenceTest {
 	}
 
 	@Test
+	public void testCountByK_R() throws Exception {
+		_persistence.countByK_R("", RandomTestUtil.nextLong());
+
+		_persistence.countByK_R("null", 0L);
+
+		_persistence.countByK_R((String)null, 0L);
+	}
+
+	@Test
 	public void testCountByR_S() throws Exception {
 		_persistence.countByR_S(RandomTestUtil.nextLong(),
 			RandomTestUtil.nextInt());
@@ -445,6 +454,14 @@ public class MemberRequestPersistenceTest {
 		Assert.assertTrue(Objects.equals(existingMemberRequest.getKey(),
 				ReflectionTestUtil.invoke(existingMemberRequest,
 					"getOriginalKey", new Class<?>[0])));
+
+		Assert.assertTrue(Objects.equals(existingMemberRequest.getKey(),
+				ReflectionTestUtil.invoke(existingMemberRequest,
+					"getOriginalKey", new Class<?>[0])));
+		Assert.assertEquals(Long.valueOf(
+				existingMemberRequest.getReceiverUserId()),
+			ReflectionTestUtil.<Long>invoke(existingMemberRequest,
+				"getOriginalReceiverUserId", new Class<?>[0]));
 
 		Assert.assertEquals(Long.valueOf(existingMemberRequest.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(existingMemberRequest,

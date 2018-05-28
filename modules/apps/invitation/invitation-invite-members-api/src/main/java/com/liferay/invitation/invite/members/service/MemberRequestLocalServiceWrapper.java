@@ -215,6 +215,12 @@ public class MemberRequestLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.invitation.invite.members.model.MemberRequest fetchMemberRequest(
+		String key, long receiverUserId) {
+		return _memberRequestLocalService.fetchMemberRequest(key, receiverUserId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery getActionableDynamicQuery() {
 		return _memberRequestLocalService.getActionableDynamicQuery();
 	}
@@ -244,6 +250,13 @@ public class MemberRequestLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return _memberRequestLocalService.getMemberRequest(groupId,
 			receiverUserId, status);
+	}
+
+	@Override
+	public com.liferay.invitation.invite.members.model.MemberRequest getMemberRequest(
+		String key, long receiverUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return _memberRequestLocalService.getMemberRequest(key, receiverUserId);
 	}
 
 	/**

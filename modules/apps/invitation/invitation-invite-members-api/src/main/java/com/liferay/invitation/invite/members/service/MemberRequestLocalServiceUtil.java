@@ -208,6 +208,11 @@ public class MemberRequestLocalServiceUtil {
 		return getService().fetchMemberRequest(memberRequestId);
 	}
 
+	public static com.liferay.invitation.invite.members.model.MemberRequest fetchMemberRequest(
+		String key, long receiverUserId) {
+		return getService().fetchMemberRequest(key, receiverUserId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery getActionableDynamicQuery() {
 		return getService().getActionableDynamicQuery();
 	}
@@ -233,6 +238,12 @@ public class MemberRequestLocalServiceUtil {
 		long groupId, long receiverUserId, int status)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().getMemberRequest(groupId, receiverUserId, status);
+	}
+
+	public static com.liferay.invitation.invite.members.model.MemberRequest getMemberRequest(
+		String key, long receiverUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return getService().getMemberRequest(key, receiverUserId);
 	}
 
 	/**

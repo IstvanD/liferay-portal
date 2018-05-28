@@ -219,6 +219,56 @@ public interface MemberRequestPersistence extends BasePersistence<MemberRequest>
 	public int countByReceiverUserId(long receiverUserId);
 
 	/**
+	* Returns the member request where key = &#63; and receiverUserId = &#63; or throws a {@link NoSuchMemberRequestException} if it could not be found.
+	*
+	* @param key the key
+	* @param receiverUserId the receiver user ID
+	* @return the matching member request
+	* @throws NoSuchMemberRequestException if a matching member request could not be found
+	*/
+	public MemberRequest findByK_R(String key, long receiverUserId)
+		throws NoSuchMemberRequestException;
+
+	/**
+	* Returns the member request where key = &#63; and receiverUserId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	*
+	* @param key the key
+	* @param receiverUserId the receiver user ID
+	* @return the matching member request, or <code>null</code> if a matching member request could not be found
+	*/
+	public MemberRequest fetchByK_R(String key, long receiverUserId);
+
+	/**
+	* Returns the member request where key = &#63; and receiverUserId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	*
+	* @param key the key
+	* @param receiverUserId the receiver user ID
+	* @param retrieveFromCache whether to retrieve from the finder cache
+	* @return the matching member request, or <code>null</code> if a matching member request could not be found
+	*/
+	public MemberRequest fetchByK_R(String key, long receiverUserId,
+		boolean retrieveFromCache);
+
+	/**
+	* Removes the member request where key = &#63; and receiverUserId = &#63; from the database.
+	*
+	* @param key the key
+	* @param receiverUserId the receiver user ID
+	* @return the member request that was removed
+	*/
+	public MemberRequest removeByK_R(String key, long receiverUserId)
+		throws NoSuchMemberRequestException;
+
+	/**
+	* Returns the number of member requests where key = &#63; and receiverUserId = &#63;.
+	*
+	* @param key the key
+	* @param receiverUserId the receiver user ID
+	* @return the number of matching member requests
+	*/
+	public int countByK_R(String key, long receiverUserId);
+
+	/**
 	* Returns all the member requests where receiverUserId = &#63; and status = &#63;.
 	*
 	* @param receiverUserId the receiver user ID

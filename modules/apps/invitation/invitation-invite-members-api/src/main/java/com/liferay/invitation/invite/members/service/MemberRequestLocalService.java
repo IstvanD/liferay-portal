@@ -182,6 +182,9 @@ public interface MemberRequestLocalService extends BaseLocalService,
 	public MemberRequest fetchMemberRequest(long memberRequestId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public MemberRequest fetchMemberRequest(String key, long receiverUserId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -201,6 +204,10 @@ public interface MemberRequestLocalService extends BaseLocalService,
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MemberRequest getMemberRequest(long groupId, long receiverUserId,
 		int status) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public MemberRequest getMemberRequest(String key, long receiverUserId)
+		throws PortalException;
 
 	/**
 	* Returns a range of all the member requests.
