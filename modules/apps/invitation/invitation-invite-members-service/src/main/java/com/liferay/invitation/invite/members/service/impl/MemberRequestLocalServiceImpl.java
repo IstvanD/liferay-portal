@@ -168,6 +168,18 @@ public class MemberRequestLocalServiceImpl
 	}
 
 	@Override
+	public MemberRequest fetchMemberRequest(String key, long receiverUserId) {
+		return memberRequestPersistence.fetchByK_R(key, receiverUserId);
+	}
+
+	@Override
+	public MemberRequest getMemberRequest(String key, long receiverUserId)
+		throws PortalException {
+
+		return memberRequestPersistence.findByK_R(key, receiverUserId);
+	}
+
+	@Override
 	public MemberRequest getMemberRequest(
 			long groupId, long receiverUserId, int status)
 		throws PortalException {

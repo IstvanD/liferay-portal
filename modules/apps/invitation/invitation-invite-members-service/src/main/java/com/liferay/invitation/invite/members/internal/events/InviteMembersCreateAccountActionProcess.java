@@ -71,8 +71,14 @@ public class InviteMembersCreateAccountActionProcess
 			}
 		}
 
-		_memberRequestLocalService.updateMemberRequest(
-			memberRequestKey, user.getUserId());
+		MemberRequest memberRequest =
+			_memberRequestLocalService.fetchMemberRequest(
+				memberRequestKey, user.getUserId());
+
+		if (memberRequest == null) {
+			_memberRequestLocalService.updateMemberRequest(
+				memberRequestKey, user.getUserId());
+		}
 	}
 
 	@Reference
