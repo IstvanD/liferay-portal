@@ -36,6 +36,8 @@ PortletURL portletURL = viewRolesManagementToolbarDisplayContext.getPortletURL()
 %>
 
 <liferay-ui:error exception="<%= RequiredRoleException.class %>" message="you-cannot-delete-a-system-role" />
+<liferay-ui:error exception="<%= RequiredWorkflowRoleException.MustNotDeleteRoleReferencedByActiveWorkflowDefinition.class %>" message="the-role-cannot-be-deleted-because-it-is-referenced-by-one-or-more-active-workflow-definitions" />
+<liferay-ui:error exception="<%= RequiredWorkflowRoleException.MustNotDeleteRoleReferencedByCurrentWorkflowTask.class %>" message="the-role-cannot-be-deleted-because-it-is-referenced-by-one-or-more-current-workflow-tasks" />
 
 <clay:navigation-bar
 	inverted="<%= true %>"
