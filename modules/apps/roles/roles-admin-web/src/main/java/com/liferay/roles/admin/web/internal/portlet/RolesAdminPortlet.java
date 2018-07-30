@@ -59,6 +59,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.roles.admin.constants.RolesAdminPortletKeys;
+import com.liferay.roles.admin.web.internal.exception.RequiredWorkflowRoleException;
+import com.liferay.roles.admin.web.internal.util.RolesWorkflowUtil;
 
 import java.io.IOException;
 
@@ -161,6 +163,8 @@ public class RolesAdminPortlet extends MVCPortlet {
 
 		long roleId = ParamUtil.getLong(actionRequest, "roleId");
 
+		RolesWorkflowUtil.checkWorkflow(roleId);
+
 		_roleService.deleteRole(roleId);
 	}
 
@@ -172,6 +176,8 @@ public class RolesAdminPortlet extends MVCPortlet {
 			ParamUtil.getString(actionRequest, "deleteRoleIds"), 0L);
 
 		for (long roleId : deleteRoleIds) {
+			RolesWorkflowUtil.checkWorkflow(roleId);
+
 			_roleService.deleteRole(roleId);
 		}
 	}
@@ -438,9 +444,12 @@ public class RolesAdminPortlet extends MVCPortlet {
 
 		long roleId = ParamUtil.getLong(renderRequest, "roleId");
 
-		if (SessionErrors.contains(
+		if ((SessionErrors.contains(
 				renderRequest, RequiredRoleException.class.getName()) &&
-			(roleId < 1)) {
+			 (roleId < 1)) ||
+			SessionErrors.contains(
+				renderRequest,
+				RequiredWorkflowRoleException.getNestedClasses())) {
 
 			include("/view.jsp", renderRequest, renderResponse);
 		}
@@ -475,6 +484,7 @@ public class RolesAdminPortlet extends MVCPortlet {
 			cause instanceof NoSuchRoleException ||
 			cause instanceof PrincipalException ||
 			cause instanceof RequiredRoleException ||
+			cause instanceof RequiredWorkflowRoleException ||
 			cause instanceof RoleAssignmentException ||
 			cause instanceof RoleNameException ||
 			cause instanceof RolePermissionsException) {
