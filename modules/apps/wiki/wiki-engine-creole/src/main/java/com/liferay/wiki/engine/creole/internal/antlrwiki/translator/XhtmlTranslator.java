@@ -232,9 +232,7 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 			linkNode.getLink(), CharPool.NO_BREAK_SPACE, StringPool.SPACE);
 
 		try {
-			page = WikiPageLocalServiceUtil.getPage(_page.getNodeId(), title);
-		}
-		catch (NoSuchPageException nspe) {
+			page = WikiPageLocalServiceUtil.fetchPage(_page.getNodeId(), title);
 		}
 		catch (Exception e) {
 			_log.error(e, e);
