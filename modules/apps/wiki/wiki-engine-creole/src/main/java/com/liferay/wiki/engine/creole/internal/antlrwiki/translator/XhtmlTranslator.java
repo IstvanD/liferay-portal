@@ -228,11 +228,11 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 	protected void appendWikiHref(LinkNode linkNode) {
 		WikiPage page = null;
 
+		String title = StringUtil.replace(
+			linkNode.getLink(), CharPool.NO_BREAK_SPACE, StringPool.SPACE);
+
 		try {
-			page = WikiPageLocalServiceUtil.getPage(
-				_page.getNodeId(), linkNode.getLink());
-		}
-		catch (NoSuchPageException nspe) {
+			page = WikiPageLocalServiceUtil.fetchPage(_page.getNodeId(), title);
 		}
 		catch (Exception e) {
 			_log.error(e, e);
@@ -249,17 +249,15 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 			return;
 		}
 
-		String pageTitle = linkNode.getLink();
-
 		if ((page != null) && (_viewPageURL != null)) {
-			_viewPageURL.setParameter("title", pageTitle);
+			_viewPageURL.setParameter("title", title);
 
 			append(_viewPageURL.toString());
 
 			_viewPageURL.setParameter("title", _page.getTitle());
 		}
 		else if (_editPageURL != null) {
-			_editPageURL.setParameter("title", pageTitle);
+			_editPageURL.setParameter("title", title);
 
 			append(_editPageURL.toString());
 
