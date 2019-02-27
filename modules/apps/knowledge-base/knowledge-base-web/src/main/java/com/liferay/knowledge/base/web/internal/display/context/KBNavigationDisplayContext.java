@@ -115,15 +115,6 @@ public class KBNavigationDisplayContext {
 			_portalPreferences,
 			_kbDisplayPortletInstanceConfiguration.contentRootPrefix());
 
-		long rootResourcePrimKey = getRootResourcePrimKey();
-
-		if (rootResourcePrimKey != KBFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-			KBFolder kbFolder = KBFolderServiceUtil.getKBFolder(
-				rootResourcePrimKey);
-
-			currentKBFolderURLTitle = kbFolder.getUrlTitle();
-		}
-
 		return currentKBFolderURLTitle;
 	}
 

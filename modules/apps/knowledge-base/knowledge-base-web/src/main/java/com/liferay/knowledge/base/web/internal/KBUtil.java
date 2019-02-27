@@ -316,6 +316,17 @@ public class KBUtil {
 		return KBCommentConstants.STATUS_NONE;
 	}
 
+	public static List<KBFolder> getRootKBFolders(long groupId, long kbFolderId)
+		throws PortalException {
+
+		List<KBFolder> kbFolders = KBFolderServiceUtil.getKBFolders(
+			groupId, kbFolderId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		kbFolders = new ArrayList<>(kbFolders);
+
+		return ListUtil.sort(kbFolders, new KBFolderNameComparator(false));
+	}
+
 	public static long getRootResourcePrimKey(
 			PortletRequest portletRequest, long groupId,
 			long resourceClassNameId, long resourcePrimKey)

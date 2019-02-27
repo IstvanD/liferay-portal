@@ -30,6 +30,7 @@ import com.liferay.knowledge.base.web.internal.constants.KBWebKeys;
 import com.liferay.knowledge.base.web.internal.selector.KBArticleSelection;
 import com.liferay.knowledge.base.web.internal.selector.KBArticleSelector;
 import com.liferay.knowledge.base.web.internal.selector.KBArticleSelectorFactory;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchSubscriptionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Release;
@@ -105,13 +106,21 @@ public class DisplayPortlet extends BaseKBPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws IOException, PortalException {
 
+		KBFolder kbFolder = null;
+
+		long kbFolderGroupId = _portal.getScopeGroupId(actionRequest);
+
 		long kbFolderId = ParamUtil.getLong(actionRequest, "rootKBFolderId");
 
-		if (kbFolderId == KBFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-			return;
-		}
+		String kbFolderURLTitle = StringPool.BLANK;
 
-		KBFolder kbFolder = kbFolderService.getKBFolder(kbFolderId);
+		if (kbFolderId != KBFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+			kbFolder = kbFolderService.getKBFolder(kbFolderId);
+
+			kbFolderGroupId = kbFolder.getGroupId();
+
+			kbFolderURLTitle = kbFolder.getUrlTitle();
+		}
 
 		PortalPreferences portalPreferences =
 			PortletPreferencesFactoryUtil.getPortalPreferences(
@@ -127,7 +136,7 @@ public class DisplayPortlet extends BaseKBPortlet {
 				portalPreferences, contentRootPrefix);
 
 		KnowledgeBaseUtil.setPreferredKBFolderURLTitle(
-			portalPreferences, contentRootPrefix, kbFolder.getUrlTitle());
+			portalPreferences, contentRootPrefix, kbFolderURLTitle);
 
 		String urlTitle = ParamUtil.getString(actionRequest, "urlTitle");
 
@@ -135,14 +144,14 @@ public class DisplayPortlet extends BaseKBPortlet {
 
 		if (Validator.isNotNull(urlTitle)) {
 			kbArticle = _kbArticleLocalService.fetchKBArticleByUrlTitle(
-				kbFolder.getGroupId(), kbFolder.getUrlTitle(), urlTitle);
+				kbFolderGroupId, kbFolderURLTitle, urlTitle);
 
 			if ((kbArticle == null) &&
-				Validator.isNotNull(previousPreferredKBFolderURLTitle)) {
+				(previousPreferredKBFolderURLTitle != null)) {
 
 				kbArticle = findClosestMatchingKBArticle(
-					kbFolder.getGroupId(), previousPreferredKBFolderURLTitle,
-					kbFolder.getKbFolderId(), urlTitle);
+					kbFolderGroupId, previousPreferredKBFolderURLTitle,
+					kbFolderId, urlTitle);
 			}
 		}
 
@@ -161,7 +170,7 @@ public class DisplayPortlet extends BaseKBPortlet {
 			actionRequest, KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
 			PortletRequest.RENDER_PHASE);
 
-		redirectURL.setParameter("kbFolderUrlTitle", kbFolder.getUrlTitle());
+		redirectURL.setParameter("kbFolderUrlTitle", kbFolderURLTitle);
 
 		if (kbArticle != null) {
 			redirectURL.setParameter("urlTitle", kbArticle.getUrlTitle());
