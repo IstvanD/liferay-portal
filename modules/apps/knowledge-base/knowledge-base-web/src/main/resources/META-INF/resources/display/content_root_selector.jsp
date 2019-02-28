@@ -38,7 +38,7 @@ if (rootResourcePrimKey != KBFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
 	rootKBFolderURLTitle = rootKBFolder.getUrlTitle();
 }
 
-List<KBFolder> kbFolders = KBUtil.getRootKBFolders(scopeGroupId, kbDisplayPortletInstanceConfiguration.resourcePrimKey());
+List<KBFolder> kbFolders = KBUtil.getAlternateRootKBFolders(scopeGroupId, kbDisplayPortletInstanceConfiguration.resourcePrimKey());
 %>
 
 <c:if test="<%= !kbFolders.isEmpty() %>">
@@ -51,9 +51,11 @@ List<KBFolder> kbFolders = KBUtil.getRootKBFolders(scopeGroupId, kbDisplayPortle
 	<div class="kbarticle-root-selector">
 		<aui:form action="<%= updateRootKBFolderIdURL %>" name="updateRootKBFolderIdFm">
 			<aui:select label="" name="rootKBFolderId">
-				<aui:option selected="<%= currentKBFolderURLTitle.equals(rootKBFolderURLTitle) %>" value="<%= rootKBFolderId %>">
-					<%= HtmlUtil.escape(kbDisplayPortletInstanceConfiguration.contentRootPrefix() + " " + rootKBFolderName) %>
-				</aui:option>
+				<c:if test="<%= KBArticleServiceUtil.getKBArticlesCount(scopeGroupId, rootKBFolderId, WorkflowConstants.STATUS_APPROVED) > 0 %>">
+					<aui:option selected="<%= currentKBFolderURLTitle.equals(rootKBFolderURLTitle) %>" value="<%= rootKBFolderId %>">
+						<%= HtmlUtil.escape(kbDisplayPortletInstanceConfiguration.contentRootPrefix() + " " + rootKBFolderName) %>
+					</aui:option>
+				</c:if>
 
 				<%
 				for (KBFolder kbFolder : kbFolders) {
