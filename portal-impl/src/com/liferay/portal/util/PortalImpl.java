@@ -8427,7 +8427,10 @@ public class PortalImpl implements Portal {
 						themeDisplay.getSiteGroupId()) &&
 					 (group.getClassPK() != themeDisplay.getUserId()))) {
 
-					if (group.isControlPanel()) {
+					if (group.isControlPanel() ||
+						!StringUtil.equalsIgnoreCase(
+							portalDomain, _LOCALHOST)) {
+
 						virtualHostname = themeDisplay.getServerName();
 
 						if (Validator.isNull(virtualHostname) ||
