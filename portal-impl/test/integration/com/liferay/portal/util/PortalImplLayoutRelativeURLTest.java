@@ -73,6 +73,11 @@ public class PortalImplLayoutRelativeURLTest extends BasePortalImplURLTestCase {
 			initThemeDisplay(company, group, publicLayout, LOCALHOST),
 			publicLayout, publicLayoutRelativeURL);
 
+		testGetLayoutRelativeURL(
+			initThemeDisplay(company, group, publicLayout, COMPANY_HOSTNAME,
+				LAYOUT_HOSTNAME),
+			publicLayout, publicLayoutRelativeURL);
+
 		String publicLayoutFriendlyURL = publicLayout.getFriendlyURL();
 		String layoutRelativeURL = PortalUtil.getLayoutRelativeURL(
 			publicLayout,
@@ -110,6 +115,10 @@ public class PortalImplLayoutRelativeURLTest extends BasePortalImplURLTestCase {
 		catch (NoSuchLayoutException nsle) {
 		}
 	}
+
+	protected static final String COMPANY_HOSTNAME = "myinstance.com";
+
+	protected static final String LAYOUT_HOSTNAME = "mysite.com";
 
 	protected String privateLayoutRelativeURL;
 	protected String publicLayoutRelativeURL;
