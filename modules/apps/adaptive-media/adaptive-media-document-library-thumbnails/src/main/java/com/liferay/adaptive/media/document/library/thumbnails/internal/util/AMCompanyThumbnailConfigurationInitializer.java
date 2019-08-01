@@ -14,11 +14,14 @@
 
 package com.liferay.adaptive.media.document.library.thumbnails.internal.util;
 
+import com.liferay.adaptive.media.configuration.AMThumbnailConfiguration;
 import com.liferay.adaptive.media.exception.AMImageConfigurationException;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.upgrade.PrefsPropsToConfigurationUpgradeHelper;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.util.PrefsPropsUtil;
 
@@ -44,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
 public class AMCompanyThumbnailConfigurationInitializer {
 
 	public void initializeCompany(Company company)
-		throws AMImageConfigurationException, IOException {
+		throws Exception {
 
 		int dlFileEntryPreviewMaxHeight = PrefsPropsUtil.getInteger(
 			PropsKeys.DL_FILE_ENTRY_PREVIEW_DOCUMENT_MAX_HEIGHT);
@@ -67,9 +70,18 @@ public class AMCompanyThumbnailConfigurationInitializer {
 		if ((dlFileEntryThumbnailMaxHeight > 0) &&
 			(dlFileEntryThumbnailMaxWidth > 0)) {
 
-			_createAMDocumentLibraryThumbnailConfiguration(
-				company, dlFileEntryThumbnailMaxHeight,
-				dlFileEntryThumbnailMaxWidth);
+			AMImageConfigurationEntry thumbnailAMConfigurationEntry =
+				_createAMDocumentLibraryThumbnailConfiguration(
+					company, dlFileEntryThumbnailMaxHeight,
+					dlFileEntryThumbnailMaxWidth);
+
+			if (thumbnailAMConfigurationEntry != null) {
+				_prefsPropsToConfigurationUpgradeHelper.mapConfigurations(
+					AMThumbnailConfiguration.class,
+					new KeyValuePair(
+						thumbnailAMConfigurationEntry.getName(),
+						"thumbnailAMConfiguration"));
+			}
 		}
 
 		int dlFileEntryThumbnailCustom1MaxHeight = PrefsPropsUtil.getInteger(
@@ -80,9 +92,18 @@ public class AMCompanyThumbnailConfigurationInitializer {
 		if ((dlFileEntryThumbnailCustom1MaxHeight > 0) &&
 			(dlFileEntryThumbnailCustom1MaxWidth > 0)) {
 
-			_createAMDocumentLibraryThumbnailConfiguration(
-				company, dlFileEntryThumbnailCustom1MaxHeight,
-				dlFileEntryThumbnailCustom1MaxWidth);
+			AMImageConfigurationEntry thumbnailCustom1AMConfigurationEntry =
+				_createAMDocumentLibraryThumbnailConfiguration(
+					company, dlFileEntryThumbnailMaxHeight,
+					dlFileEntryThumbnailMaxWidth);
+
+			if (thumbnailCustom1AMConfigurationEntry != null) {
+				_prefsPropsToConfigurationUpgradeHelper.mapConfigurations(
+					AMThumbnailConfiguration.class,
+					new KeyValuePair(
+						thumbnailCustom1AMConfigurationEntry.getName(),
+						"thumbnailCustom1AMConfiguration"));
+			}
 		}
 
 		int dlFileEntryThumbnailCustom2MaxHeight = PrefsPropsUtil.getInteger(
@@ -93,13 +114,22 @@ public class AMCompanyThumbnailConfigurationInitializer {
 		if ((dlFileEntryThumbnailCustom2MaxHeight > 0) &&
 			(dlFileEntryThumbnailCustom2MaxWidth > 0)) {
 
-			_createAMDocumentLibraryThumbnailConfiguration(
-				company, dlFileEntryThumbnailCustom2MaxHeight,
-				dlFileEntryThumbnailCustom2MaxWidth);
+			AMImageConfigurationEntry thumbnailCustom2AMConfigurationEntry =
+				_createAMDocumentLibraryThumbnailConfiguration(
+					company, dlFileEntryThumbnailMaxHeight,
+					dlFileEntryThumbnailMaxWidth);
+
+			if (thumbnailCustom2AMConfigurationEntry != null) {
+				_prefsPropsToConfigurationUpgradeHelper.mapConfigurations(
+					AMThumbnailConfiguration.class,
+					new KeyValuePair(
+						thumbnailCustom2AMConfigurationEntry.getName(),
+						"thumbnailCustom2AMConfiguration"));
+			}
 		}
 	}
 
-	private void _createAMDocumentLibraryConfiguration(
+	private AMImageConfigurationEntry _createAMDocumentLibraryConfiguration(
 			Company company, String name, int maxHeight, int maxWidth)
 		throws AMImageConfigurationException, IOException {
 
@@ -111,31 +141,33 @@ public class AMCompanyThumbnailConfigurationInitializer {
 			properties.put("max-height", String.valueOf(maxHeight));
 			properties.put("max-width", String.valueOf(maxWidth));
 
-			_amImageConfigurationHelper.addAMImageConfigurationEntry(
+			return _amImageConfigurationHelper.addAMImageConfigurationEntry(
 				company.getCompanyId(), name,
 				"This image resolution was automatically added.", uuid,
 				properties);
 		}
+
+		return null;
 	}
 
-	private void _createAMDocumentLibraryPreviewConfiguration(
+	private AMImageConfigurationEntry _createAMDocumentLibraryPreviewConfiguration(
 			Company company, int maxHeight, int maxWidth)
 		throws AMImageConfigurationException, IOException {
 
 		String name = String.format("%s %dx%d", "Preview", maxWidth, maxHeight);
 
-		_createAMDocumentLibraryConfiguration(
+		return _createAMDocumentLibraryConfiguration(
 			company, name, maxHeight, maxWidth);
 	}
 
-	private void _createAMDocumentLibraryThumbnailConfiguration(
+	private AMImageConfigurationEntry _createAMDocumentLibraryThumbnailConfiguration(
 			Company company, int maxHeight, int maxWidth)
 		throws AMImageConfigurationException, IOException {
 
 		String name = String.format(
 			"%s %dx%d", "Thumbnail", maxWidth, maxHeight);
 
-		_createAMDocumentLibraryConfiguration(
+		return _createAMDocumentLibraryConfiguration(
 			company, name, maxHeight, maxWidth);
 	}
 
@@ -170,5 +202,9 @@ public class AMCompanyThumbnailConfigurationInitializer {
 
 	@Reference
 	private AMImageConfigurationHelper _amImageConfigurationHelper;
+
+	@Reference
+	private PrefsPropsToConfigurationUpgradeHelper
+		_prefsPropsToConfigurationUpgradeHelper;
 
 }
