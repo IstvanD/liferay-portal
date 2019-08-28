@@ -50,3 +50,6 @@ rowURL.setParameter("folderId", String.valueOf(folder.getFolderId()));
 		</c:otherwise>
 	</c:choose>
 </span>
+<span>
+    <%= DLUtil.getAbsolutePath(liferayPortletRequest, folder.getParentFolderId())%>
+</span>

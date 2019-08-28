@@ -79,7 +79,9 @@ rowURL.setParameter("fileEntryId", String.valueOf(fileEntry.getFileEntryId()));
 <span>
 	<liferay-ui:message arguments="<%= new String[] {HtmlUtil.escape(latestFileVersion.getUserName()), modifiedDateDescription} %>" key="x-modified-x-ago" />
 </span>
-
+<span>
+	<%= DLUtil.getAbsolutePath(liferayPortletRequest,fileEntry.getFolderId())%>
+</span>
 <c:if test="<%= latestFileVersion.getModel() instanceof DLFileVersion %>">
 
 	<%
@@ -109,3 +111,5 @@ rowURL.setParameter("fileEntryId", String.valueOf(fileEntry.getFileEntryId()));
 		</c:when>
 	</c:choose>
 </span>
+
+
