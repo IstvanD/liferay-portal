@@ -72,7 +72,8 @@ public class CKEditorCreoleConfigContributor
 		).put(
 			"disableObjectResizing", Boolean.TRUE
 		).put(
-			"extraPlugins", "a11yhelpbtn,creole,itemselector,lfrpopup,wikilink"
+			"extraPlugins", "a11yhelpbtn,creole,itemselector,googledocs," +
+ 				"lfrpopup,wikilink"
 		).put(
 			"filebrowserWindowFeatures",
 			"title=" + LanguageUtil.get(themeDisplay.getLocale(), "browse")
@@ -110,8 +111,8 @@ public class CKEditorCreoleConfigContributor
 				"['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent']"),
 			toJSONArray("['Format']"), toJSONArray("['Link', 'Unlink']"),
 			toJSONArray(
-				"['Table', '-','ImageSelector', '-', 'HorizontalRule', '-', " +
-					"'SpecialChar']"),
+				"['Table', '-', 'GoogleDocsSelector', 'ImageSelector', '-', " +
+					"'HorizontalRule', '-', 'SpecialChar']"),
 			"/",
 			toJSONArray(
 				"['Cut', 'Copy', 'Paste', '-', 'PasteText', 'PasteFromWord', " +
@@ -134,6 +135,7 @@ public class CKEditorCreoleConfigContributor
 			toJSONArray("['Bold', 'Italic']"),
 			toJSONArray("['NumberedList', 'BulletedList']"),
 			toJSONArray("['Link', 'Unlink']"),
+			toJSONArray("['GoogleDocsSelector']"),
 			toJSONArray("['ImageSelector']"));
 
 		if (isShowSource(inputEditorTaglibAttributes)) {
@@ -151,6 +153,7 @@ public class CKEditorCreoleConfigContributor
 			toJSONArray(
 				"['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent']"),
 			toJSONArray("['Format']"), toJSONArray("['Link', 'Unlink']"),
+			toJSONArray("['GoogleDocsSelector']"),
 			toJSONArray("['ImageSelector']"));
 
 		if (isShowSource(inputEditorTaglibAttributes)) {
