@@ -175,7 +175,7 @@ public class AlloyEditorConfigContributor
 
 	protected JSONObject getToolbarsAddJSONObject() {
 		return JSONUtil.put(
-			"buttons", toJSONArray("['image', 'embedVideo', 'table', 'hline']")
+			"buttons", toJSONArray("['image', 'embedVideo', 'table', 'hline', 'customButton']")
 		).put(
 			"tabIndex", 2
 		);
@@ -199,7 +199,7 @@ public class AlloyEditorConfigContributor
 
 	protected JSONObject getToolbarsStylesSelectionsEmbedURLJSONObject() {
 		return JSONUtil.put(
-			"buttons", toJSONArray("['imageLeft', 'imageCenter', 'imageRight']")
+			"buttons", toJSONArray("['imageLeft', 'imageCenter', 'imageRight', 'customButton']")
 		).put(
 			"name", "embedurl"
 		).put(
@@ -266,7 +266,7 @@ public class AlloyEditorConfigContributor
 			"buttons",
 			JSONUtil.putAll(
 				getStyleFormatsJSONObject(locale), "bold", "italic",
-				"underline", "ol", "ul", "linkBrowse")
+				"underline", "ol", "ul", "linkBrowse", "customButton")
 		).put(
 			"name", "text"
 		).put(
