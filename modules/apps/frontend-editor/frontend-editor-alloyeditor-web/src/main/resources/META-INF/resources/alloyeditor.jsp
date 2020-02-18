@@ -139,6 +139,10 @@ if (showSource) {
 name = HtmlUtil.escapeJS(name);
 %>
 
+<liferay-frontend:component
+ 	module="js/custom-button"
+/>
+
 <aui:script use="<%= modules %>">
 	var windowNode = A.getWin();
 

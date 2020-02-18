@@ -78,7 +78,9 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			"entities", Boolean.FALSE
 		);
 
-		String extraPlugins = "a11yhelpbtn,itemselector,lfrpopup,media";
+		String extraPlugins = "a11yhelpbtn,itemselector,googledocs,lfrpopup,media";
+
+		String removePlugins = "iframe,iframedialog";
 
 		boolean inlineEdit = GetterUtil.getBoolean(
 			(String)inputEditorTaglibAttributes.get(
@@ -90,6 +92,8 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 		jsonObject.put(
 			"extraPlugins", extraPlugins
+		).put(
+			"removePlugins", removePlugins
 		).put(
 			"filebrowserWindowFeatures",
 			"title=" + LanguageUtil.get(themeDisplay.getLocale(), "browse")
@@ -223,6 +227,7 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 				"['JustifyLeft', 'JustifyCenter', 'JustifyRight', " +
 					"'JustifyBlock']"),
 			toJSONArray("['FontSize']"), toJSONArray("['Link', 'Unlink']"),
+			toJSONArray("['GoogleDocsSelector']"),
 			toJSONArray("['ImageSelector']"), "/",
 			toJSONArray(
 				"['Cut', 'Copy', 'Paste', '-', 'PasteText', 'PasteFromWord', " +
@@ -241,7 +246,8 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 	protected JSONArray getToolbarLiferayArticleJSONArray(
 		Map<String, Object> inputEditorTaglibAttributes) {
 
-		String buttons = "['Table', '-', 'ImageSelector',";
+		String buttons = "['Table', '-', 'GoogleDocsSelector', " +
+		"'ImageSelector',";
 
 		if (XugglerUtil.isEnabled()) {
 			buttons += " 'AudioSelector', 'VideoSelector',";
@@ -281,7 +287,8 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 	protected JSONArray getToolbarLiferayJSONArray(
 		Map<String, Object> inputEditorTaglibAttributes) {
 
-		String buttons = "['Table', '-', 'ImageSelector',";
+		String buttons = "['Table', '-', 'GoogleDocsSelector', " +
+		"'ImageSelector',";
 
 		if (XugglerUtil.isEnabled()) {
 			buttons = buttons.concat(" 'AudioSelector', 'VideoSelector',");
@@ -335,6 +342,7 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			toJSONArray("['Bold', 'Italic', 'Underline']"),
 			toJSONArray("['NumberedList', 'BulletedList']"),
 			toJSONArray("['Link', 'Unlink']"),
+			toJSONArray("['GoogleDocsSelector']"),
 			toJSONArray("['ImageSelector']"));
 
 		if (isShowSource(inputEditorTaglibAttributes)) {
@@ -351,6 +359,7 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			toJSONArray("['Bold', 'Italic', 'Underline', 'Strike']"),
 			toJSONArray("['NumberedList', 'BulletedList']"),
 			toJSONArray("['Link', 'Unlink']"),
+			toJSONArray("['GoogleDocsSelector']"),
 			toJSONArray("['Table', 'ImageSelector']"));
 
 		if (isShowSource(inputEditorTaglibAttributes)) {
@@ -371,6 +380,7 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			toJSONArray("['NumberedList', 'BulletedList']"),
 			toJSONArray("['Styles', 'FontSize']"),
 			toJSONArray("['Link', 'Unlink']"),
+			toJSONArray("['GoogleDocsSelector']"),
 			toJSONArray("['ImageSelector']"));
 
 		if (isShowSource(inputEditorTaglibAttributes)) {

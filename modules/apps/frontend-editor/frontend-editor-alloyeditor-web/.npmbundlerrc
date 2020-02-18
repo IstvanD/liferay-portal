@@ -1,8 +1,16 @@
 {
 	"exclude": {
-		"*": true
+		"*": [
+ 			"**/alloyeditor.js",
+ 			"**/alloyeditor_source.js",
+ 			"**/config.js",
+ 			"**/editor_image_uploader.js"
+ 		]
 	},
 	"ignore": [
-		"**/*"
+		"**/alloyeditor.js",
+ 		"**/alloyeditor_source.js",
+ 		"**/config.js",
+ 		"**/editor_image_uploader.js"
 	]
 }
