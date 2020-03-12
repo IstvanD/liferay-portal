@@ -47,13 +47,16 @@ import javax.mail.internet.InternetAddress;
 public class MailMessageListener extends BaseMessageListener {
 
 	protected void doMailMessage(MailMessage mailMessage) throws Exception {
-		InternetAddress from = filterInternetAddress(mailMessage.getFrom());
+		InternetAddress from = null;
 
 		String smtpUserName =
 			PrefsPropsUtil.getString(PropsKeys.MAIL_SESSION_MAIL_SMTP_USER);
 
 		if (Validator.isEmailAddress(smtpUserName)) {
 			from = filterInternetAddress(new InternetAddress(smtpUserName));
+		}
+		else {
+			from = filterInternetAddress(mailMessage.getFrom());
 		}
 
 		if (from == null) {
