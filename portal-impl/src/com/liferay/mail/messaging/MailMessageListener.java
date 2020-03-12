@@ -26,7 +26,9 @@ import com.liferay.portal.kernel.security.auth.EmailAddressGenerator;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.EmailAddressGeneratorFactory;
+import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.util.ArrayList;
@@ -46,6 +48,13 @@ public class MailMessageListener extends BaseMessageListener {
 
 	protected void doMailMessage(MailMessage mailMessage) throws Exception {
 		InternetAddress from = filterInternetAddress(mailMessage.getFrom());
+
+		String smtpUserName =
+			PrefsPropsUtil.getString(PropsKeys.MAIL_SESSION_MAIL_SMTP_USER);
+
+		if (Validator.isEmailAddress(smtpUserName)) {
+			from = filterInternetAddress(new InternetAddress(smtpUserName));
+		}
 
 		if (from == null) {
 			if (_log.isWarnEnabled()) {
