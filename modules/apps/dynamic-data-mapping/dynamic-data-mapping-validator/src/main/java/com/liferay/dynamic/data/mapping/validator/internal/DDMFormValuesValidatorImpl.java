@@ -233,14 +233,14 @@ public class DDMFormValuesValidatorImpl implements DDMFormValuesValidator {
 			getDDMFormFieldValueAccessor(ddmFormField.getType());
 
 		for (Locale availableLocale : value.getAvailableLocales()) {
-			if (ddmFormFieldValueAccessor.isEmpty(
+			if (!ddmFormFieldValueAccessor.isEmpty(
 					ddmFormFieldValue, availableLocale)) {
 
-				return true;
+				return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 
 	protected void removeDDMFormFieldValueValidator(
