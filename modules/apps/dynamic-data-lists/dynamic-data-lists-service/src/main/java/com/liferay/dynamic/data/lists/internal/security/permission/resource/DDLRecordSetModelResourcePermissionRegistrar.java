@@ -63,10 +63,6 @@ public class DDLRecordSetModelResourcePermissionRegistrar {
 							return null;
 						}
 
-						if (actionId.equals(DDLActionKeys.ADD_RECORD)) {
-							return null;
-						}
-
 						return _stagingPermission.hasPermission(
 							permissionChecker, recordSet.getGroupId(), name,
 							recordSet.getRecordSetId(),
