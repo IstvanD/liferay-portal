@@ -1,5 +1,3 @@
-package com.liferay.portal.upgrade.v7_4_x;
-
 /**
  * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
@@ -14,6 +12,8 @@ package com.liferay.portal.upgrade.v7_4_x;
  * details.
  */
 
+package com.liferay.portal.upgrade.v7_4_x;
+
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 
 /**
@@ -23,6 +23,7 @@ public class UpgradeLayout extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		runSQL(
-			"update Layout set classNameId = 0 where classNameId = null");
-	}}
+		runSQL("update Layout set classNameId = 0 where classNameId = null");
+	}
+
+}
