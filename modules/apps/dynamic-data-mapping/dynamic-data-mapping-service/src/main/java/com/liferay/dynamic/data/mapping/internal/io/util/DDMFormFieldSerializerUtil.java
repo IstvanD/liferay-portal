@@ -327,13 +327,9 @@ public class DDMFormFieldSerializerUtil {
 				if (value.length() == 0) {
 					localizedValue.addString(entry.getKey(), StringPool.BLANK);
 				}
-				else {
-					localizedValue.addString(entry.getKey(), entry.getValue());
-				}
 			}
-			else {
-				localizedValue.addString(entry.getKey(), entry.getValue());
-			}
+
+			localizedValue.addString(entry.getKey(), entry.getValue());
 		}
 
 		return localizedValue;
