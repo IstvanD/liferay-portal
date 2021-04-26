@@ -310,7 +310,7 @@ public class DDMFormFieldSerializerUtil {
 
 	private static LocalizedValue _trim(LocalizedValue rawLocalizedValue) {
 		if (rawLocalizedValue == null) {
-			return rawLocalizedValue;
+			return null;
 		}
 
 		Map<Locale, String> predefinedValuesMap = rawLocalizedValue.getValues();
@@ -320,10 +320,15 @@ public class DDMFormFieldSerializerUtil {
 		for (Map.Entry<Locale, String> entry : predefinedValuesMap.entrySet()) {
 			String value = entry.getValue();
 
-			value = StringUtil.trim(value);
+			if (value != null) {
+				value = StringUtil.trim(value);
 
-			if (value.length() == 0) {
-				localizedValue.addString(entry.getKey(), StringPool.BLANK);
+				if (value.length() == 0) {
+					localizedValue.addString(entry.getKey(), StringPool.BLANK);
+				}
+				else {
+					localizedValue.addString(entry.getKey(), entry.getValue());
+				}
 			}
 			else {
 				localizedValue.addString(entry.getKey(), entry.getValue());
