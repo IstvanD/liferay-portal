@@ -30,9 +30,18 @@ boolean preserveRatio = GetterUtil.getBoolean((String)request.getAttribute("life
 boolean showBackground = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:logo-selector:showBackground"));
 boolean showButtons = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:logo-selector:showButtons"));
 String tempImageFileName = (String)request.getAttribute("liferay-ui:logo-selector:tempImageFileName");
-
+String uploadURL = (String)request.getAttribute("liferay-ui:logo-selector:uploadURL");
 boolean deleteLogo = ParamUtil.getBoolean(request, "deleteLogo");
 long fileEntryId = ParamUtil.getLong(request, "fileEntryId");
+
+String currentPortletName = PortletKeys.IMAGE_UPLOADER;
+String mvcRenderCommandName = "/image_uploader/upload_image";
+
+if (Validator.isNotNull(uploadURL)) {
+	currentPortletName = HttpUtil.getParameter(uploadURL, "p_p_id", false);
+	mvcRenderCommandName = HttpUtil.getParameter(uploadURL, namespace + "javax.portlet.action", false);
+	mvcRenderCommandName = URLCodec.decodeURL(mvcRenderCommandName);
+}
 
 String imageURL = null;
 
@@ -40,9 +49,9 @@ if (deleteLogo) {
 	imageURL = defaultLogoURL;
 }
 else if (fileEntryId > 0) {
-	ResourceURL previewURL = PortletURLFactoryUtil.create(portletRequest, PortletKeys.IMAGE_UPLOADER, PortletRequest.RESOURCE_PHASE);
+	ResourceURL previewURL = PortletURLFactoryUtil.create(portletRequest, currentPortletName, PortletRequest.RESOURCE_PHASE);
 
-	previewURL.setParameter("mvcRenderCommandName", "/image_uploader/upload_image");
+	previewURL.setParameter("mvcRenderCommandName", mvcRenderCommandName);
 	previewURL.setParameter(Constants.CMD, Constants.GET_TEMP);
 	previewURL.setParameter("tempImageFileName", tempImageFileName);
 
@@ -81,8 +90,8 @@ else {
 			</div>
 		</div>
 
-		<liferay-portlet:renderURL portletName="<%= PortletKeys.IMAGE_UPLOADER %>" var="uploadImageURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
-			<liferay-portlet:param name="mvcRenderCommandName" value="/image_uploader/upload_image" />
+		<liferay-portlet:renderURL portletName="<%= currentPortletName %>" var="uploadImageURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
+			<liferay-portlet:param name="mvcRenderCommandName" value="<%= mvcRenderCommandName %>" />
 			<liferay-portlet:param name="randomNamespace" value="<%= randomNamespace %>" />
 			<liferay-portlet:param name="aspectRatio" value="<%= String.valueOf(aspectRatio) %>" />
 			<liferay-portlet:param name="currentLogoURL" value="<%= currentLogoURL %>" />
