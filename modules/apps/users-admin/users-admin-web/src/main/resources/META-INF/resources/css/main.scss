@@ -38,6 +38,31 @@
 		padding: 15px 0 5px;
 	}
 
+	.lfr-change-logo {
+		background: url(@theme_image_path@/common/checkerboard.png) repeat 50%;
+		display: block;
+		margin-bottom: 10px;
+	}
+
+	.lfr-portrait-preview {
+		&:after {
+			clear: both;
+			content: '';
+			display: block;
+			height: 0;
+			visibility: hidden;
+		}
+
+		.lfr-portrait-preview-img.loading {
+			background: #fff
+				url(@theme_image_path@/application/loading_indicator.gif)
+				no-repeat 50%;
+			border: 1px solid transparent;
+			min-height: 50px;
+			min-width: 50px;
+		}
+	}
+
 	.org-labor-entry {
 		float: left;
 		margin-right: 2%;

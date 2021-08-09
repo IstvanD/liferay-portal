@@ -149,10 +149,7 @@ User selUser = (User)request.getAttribute(UsersAdminWebKeys.SELECTED_USER);
 			<c:if test="<%= selUser != null %>">
 				<c:choose>
 					<c:when test='<%= UsersAdminUtil.hasUpdateFieldPermission(permissionChecker, user, selUser, "portrait") %>'>
-
-						<%
-						UserFileUploadsConfiguration userFileUploadsConfiguration = ConfigurationProviderUtil.getSystemConfiguration(UserFileUploadsConfiguration.class);
-						%>
+						<portlet:actionURL name="/users_admin/upload_portrait" var="uploadPortraitURL" />
 
 						<label class="control-label"></label>
 
@@ -162,9 +159,9 @@ User selUser = (User)request.getAttribute(UsersAdminWebKeys.SELECTED_USER);
 							defaultLogo="<%= selUser.getPortraitId() == 0 %>"
 							defaultLogoURL="<%= UserConstants.getPortraitURL(themeDisplay.getPathImage(), selUser.isMale(), 0, null) %>"
 							logoDisplaySelector=".user-logo"
-							maxFileSize="<%= userFileUploadsConfiguration.imageMaxSize() %>"
 							preserveRatio="<%= true %>"
 							tempImageFileName="<%= String.valueOf(selUser.getUserId()) %>"
+							uploadURL="<%= uploadPortraitURL %>"
 						/>
 					</c:when>
 					<c:otherwise>
