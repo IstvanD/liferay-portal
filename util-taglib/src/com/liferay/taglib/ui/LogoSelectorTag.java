@@ -55,6 +55,10 @@ public class LogoSelectorTag extends IncludeTag {
 		return _tempImageFileName;
 	}
 
+	public String getUploadURL() {
+		return _uploadURL;
+	}
+
 	public boolean isDefaultLogo() {
 		return _defaultLogo;
 	}
@@ -115,6 +119,10 @@ public class LogoSelectorTag extends IncludeTag {
 		_tempImageFileName = tempImageFileName;
 	}
 
+	public void setUploadURL(String uploadURL) {
+		_uploadURL = uploadURL;
+	}
+
 	@Override
 	protected void cleanUp() {
 		super.cleanUp();
@@ -130,6 +138,7 @@ public class LogoSelectorTag extends IncludeTag {
 		_showBackground = true;
 		_showButtons = true;
 		_tempImageFileName = null;
+		_uploadURL = null;
 	}
 
 	@Override
@@ -184,6 +193,8 @@ public class LogoSelectorTag extends IncludeTag {
 			String.valueOf(_showButtons));
 		httpServletRequest.setAttribute(
 			"liferay-ui:logo-selector:tempImageFileName", _tempImageFileName);
+		httpServletRequest.setAttribute(
+			"liferay-ui:logo-selector:uploadURL", _uploadURL);
 	}
 
 	private static final String _PAGE =
@@ -203,5 +214,6 @@ public class LogoSelectorTag extends IncludeTag {
 	private boolean _showBackground = true;
 	private boolean _showButtons = true;
 	private String _tempImageFileName;
+	private String _uploadURL;
 
 }
