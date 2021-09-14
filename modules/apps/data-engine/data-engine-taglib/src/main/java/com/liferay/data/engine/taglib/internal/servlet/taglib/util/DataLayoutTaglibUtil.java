@@ -30,6 +30,7 @@ import com.liferay.data.engine.taglib.servlet.taglib.definition.DataLayoutBuilde
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormBuilderContextFactory;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingContext;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormTemplateContextFactory;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
@@ -815,7 +816,7 @@ public class DataLayoutTaglibUtil {
 							setName(ddmFormFieldTypeSetting.getName());
 							setValue(
 								_createDDMFormFieldValue(
-									ddmForm.getAvailableLocales(),
+									ddmForm.getAvailableLocales(), ddmFormField,
 									ddmFormFieldTypeSetting,
 									ddmFormFieldProperties.get(
 										ddmFormFieldTypeSetting.getName())));
@@ -860,7 +861,7 @@ public class DataLayoutTaglibUtil {
 		}
 
 		private Value _createDDMFormFieldValue(
-				Set<Locale> availableLocales,
+				Set<Locale> availableLocales, DDMFormField ddmFormField,
 				DDMFormField ddmFormFieldTypeSetting, Object propertyValue)
 			throws Exception {
 
@@ -869,7 +870,15 @@ public class DataLayoutTaglibUtil {
 			}
 
 			if (Objects.equals(
-					ddmFormFieldTypeSetting.getDataType(), "ddm-options")) {
+					ddmFormField.getType(), DDMFormFieldTypeConstants.IMAGE) &&
+				Objects.equals(
+					ddmFormFieldTypeSetting.getName(), "requiredDescription") &&
+				(propertyValue == null)) {
+
+				return new UnlocalizedValue(Boolean.TRUE.toString());
+			}
+			else if (Objects.equals(
+						ddmFormFieldTypeSetting.getDataType(), "ddm-options")) {
 
 				return _createDDMFormFieldValue(
 					availableLocales,
