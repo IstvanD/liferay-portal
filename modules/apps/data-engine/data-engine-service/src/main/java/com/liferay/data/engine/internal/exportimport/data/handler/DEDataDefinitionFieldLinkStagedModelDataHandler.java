@@ -28,6 +28,7 @@ import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Element;
 
 import java.util.Map;
@@ -146,19 +147,44 @@ public class DEDataDefinitionFieldLinkStagedModelDataHandler
 					"link-class-name")));
 		importedDEDataDefinitionFieldLink.setDdmStructureId(ddmStructureId);
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.getDDMStructure(
-			ddmStructureId);
+		if (StringUtil.equals(
+				importedDEDataDefinitionFieldLink.getClassName(),
+				DDMStructureLayout.class.getName())) {
 
-		DDMStructureVersion structureVersion =
-			ddmStructure.getStructureVersion();
+			Map<Long, Long> structureLayoutIds =
+				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+					DDMStructureLayout.class);
 
-		DDMStructureLayout structureLayout =
-			_ddmStructureLayoutLocalService.
-				getStructureLayoutByStructureVersionId(
-					structureVersion.getStructureVersionId());
+			DDMStructureLayout structureLayout =
+				_ddmStructureLayoutLocalService.getStructureLayout(
+					importedDEDataDefinitionFieldLink.getClassPK());
 
-		importedDEDataDefinitionFieldLink.setClassPK(
-			structureLayout.getStructureLayoutId());
+			if (structureLayoutIds.containsKey(
+					structureLayout.getStructureLayoutId())) {
+
+				importedDEDataDefinitionFieldLink.setClassPK(
+					structureLayoutIds.get(
+						structureLayout.getStructureLayoutId()));
+			}
+			else {
+				DDMStructure ddmStructure = structureLayout.getDDMStructure();
+
+				DDMStructureVersion structureVersion =
+					ddmStructure.getStructureVersion();
+
+				DDMStructureLayout importedStructureLayout =
+					_ddmStructureLayoutLocalService.
+						getStructureLayoutByStructureVersionId(
+							structureVersion.getStructureVersionId());
+
+				importedDEDataDefinitionFieldLink.setClassPK(
+					importedStructureLayout.getStructureLayoutId());
+
+				structureLayoutIds.put(
+					structureLayout.getStructureLayoutId(),
+					importedStructureLayout.getStructureLayoutId());
+			}
+		}
 
 		DEDataDefinitionFieldLink existingDEDataDefinitionFieldLink =
 			_stagedModelRepository.fetchStagedModelByUuidAndGroupId(
