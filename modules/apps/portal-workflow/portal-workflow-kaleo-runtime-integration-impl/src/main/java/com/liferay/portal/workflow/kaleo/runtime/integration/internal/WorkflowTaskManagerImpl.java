@@ -156,6 +156,19 @@ public class WorkflowTaskManagerImpl implements WorkflowTaskManager {
 			boolean waitForCompletion)
 		throws WorkflowException {
 
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		ServiceContext serviceContext = (ServiceContext)workflowContext.get(
+			"serviceContext");
+
+		if (!permissionChecker.isContentReviewer(
+				serviceContext.getCompanyId(),
+				serviceContext.getScopeGroupId())) {
+
+			ReflectionUtil.throwException(new PrincipalException());
+		}
+
 		Lock lock = null;
 
 		try {
@@ -178,11 +191,6 @@ public class WorkflowTaskManagerImpl implements WorkflowTaskManager {
 		}
 
 		try {
-			ServiceContext serviceContext = new ServiceContext();
-
-			serviceContext.setCompanyId(companyId);
-			serviceContext.setUserId(userId);
-
 			WorkflowTask workflowTask = _taskManager.completeWorkflowTask(
 				workflowTaskId, transitionName, comment, workflowContext,
 				serviceContext);
