@@ -59,6 +59,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.util.PropsValues;
 
 import java.math.BigDecimal;
 
@@ -296,7 +297,15 @@ public class DDMFormFieldTemplateContextFactory {
 
 			LocalizedValue localizedValue = entry.getValue();
 
-			option.put("label", localizedValue.getString(_locale));
+			String label = localizedValue.getString(_locale);
+
+			if (label == null) {
+				label = localizedValue.getString(
+					LocaleUtil.fromLanguageId(
+						PropsValues.COMPANY_DEFAULT_LOCALE));
+			}
+
+			option.put("label", label);
 
 			option.put("reference", optionsReferences.get(entry.getKey()));
 			option.put("value", entry.getKey());
