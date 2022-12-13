@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.DirectServletRegistry;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
@@ -104,6 +105,13 @@ public class DirectServletRegistryImpl implements DirectServletRegistry {
 	}
 
 	protected long getFileLastModified(String path, Servlet servlet) {
+		if (Validator.isNotNull(PathModulePrefixHolder._PATH_CONTEXT_PREFIX) &&
+			path.startsWith(PathModulePrefixHolder._PATH_CONTEXT_PREFIX)) {
+
+			path = path.substring(
+				PathModulePrefixHolder._PATH_CONTEXT_PREFIX.length());
+		}
+
 		ServletConfig servletConfig = servlet.getServletConfig();
 
 		ServletContext servletContext = servletConfig.getServletContext();
@@ -221,6 +229,9 @@ public class DirectServletRegistryImpl implements DirectServletRegistry {
 		new ConcurrentHashMap<>();
 
 	private static class PathModulePrefixHolder {
+
+		private static final String _PATH_CONTEXT_PREFIX =
+			PortalUtil.getPathProxy() + PortalUtil.getPathContext();
 
 		private static final String _PATH_MODULE_PREFIX = StringBundler.concat(
 			PortalUtil.getPathProxy(), PortalUtil.getPathContext(),
