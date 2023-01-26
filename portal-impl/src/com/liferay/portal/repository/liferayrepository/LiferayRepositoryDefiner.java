@@ -37,6 +37,8 @@ import com.liferay.portal.kernel.repository.registry.BaseRepositoryDefiner;
 import com.liferay.portal.kernel.repository.registry.CapabilityRegistry;
 import com.liferay.portal.kernel.repository.registry.RepositoryDefiner;
 import com.liferay.portal.kernel.repository.registry.RepositoryFactoryRegistry;
+import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
 
@@ -172,9 +174,13 @@ public class LiferayRepositoryDefiner extends BaseRepositoryDefiner {
 						fileContentReference.getSourceFileName());
 				}
 
-				if ((fileContentReference.getFileEntryId() == 0) ||
-					Validator.isNotNull(
-						fileContentReference.getSourceFileName())) {
+				if (((fileContentReference.getFileEntryId() == 0) ||
+					 Validator.isNotNull(
+						 fileContentReference.getSourceFileName())) &&
+					!StringUtil.equals(
+						fileContentReference.getMimeType(),
+						ContentTypes.
+							APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML)) {
 
 					DLValidatorUtil.validateFileExtension(
 						fileContentReference.getSourceFileName());

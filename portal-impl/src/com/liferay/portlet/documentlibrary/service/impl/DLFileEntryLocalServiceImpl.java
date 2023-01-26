@@ -245,7 +245,8 @@ public class DLFileEntryLocalServiceImpl
 			PortalUtil.getCurrentAndAncestorSiteGroupIds(groupId), folderId,
 			fileEntryTypeId);
 
-		_validateFile(groupId, folderId, 0, fileName, extension, title);
+		_validateFile(
+			groupId, folderId, 0, fileEntryTypeId, fileName, extension, title);
 
 		long fileEntryId = counterLocalService.increment();
 
@@ -3314,7 +3315,8 @@ public class DLFileEntryLocalServiceImpl
 
 			_validateFile(
 				dlFileEntry.getGroupId(), dlFileEntry.getFolderId(),
-				dlFileEntry.getFileEntryId(), fileName, extension, title);
+				dlFileEntry.getFileEntryId(), fileEntryTypeId, fileName,
+				extension, title);
 
 			// File version
 
@@ -3460,13 +3462,21 @@ public class DLFileEntryLocalServiceImpl
 	}
 
 	private void _validateFile(
-			long groupId, long folderId, long fileEntryId, String fileName,
-			String extension, String title)
+			long groupId, long folderId, long fileEntryId, long fileEntryTypeId,
+			String fileName, String extension, String title)
 		throws PortalException {
 
 		DLValidatorUtil.validateFileName(fileName);
 
-		_validateFileExtension(fileName, extension);
+		DLFileEntryType dlFileEntryType =
+			_dlFileEntryTypeLocalService.getDLFileEntryType(fileEntryTypeId);
+
+		if (!StringUtil.equals(
+				dlFileEntryType.getFileEntryTypeKey(),
+				"DL_VIDEO_EXTERNAL_SHORTCUT")) {
+
+			_validateFileExtension(fileName, extension);
+		}
 
 		validateFile(groupId, folderId, fileEntryId, fileName, title);
 	}
