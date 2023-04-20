@@ -105,6 +105,14 @@ public class RenderedImageUtil {
 				if (imageReader != null) {
 					imageReader.dispose();
 				}
+
+				if (imageInputStream != null) {
+					imageInputStream.close();
+				}
+
+				if (inputStream != null) {
+					inputStream.close();
+				}
 			}
 		}
 
