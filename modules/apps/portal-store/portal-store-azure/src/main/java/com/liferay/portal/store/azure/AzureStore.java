@@ -82,6 +82,8 @@ public class AzureStore implements Store {
 
 		File tempFile = null;
 
+		// dummy
+
 		try {
 			tempFile = FileUtil.createTempFile(inputStream);
 
