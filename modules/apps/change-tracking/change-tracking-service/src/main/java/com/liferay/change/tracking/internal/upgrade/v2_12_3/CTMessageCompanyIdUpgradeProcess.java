@@ -42,7 +42,7 @@ public class CTMessageCompanyIdUpgradeProcess extends UpgradeProcess {
 						preparedStatement.addBatch();
 					}
 				},
-				"Failed to clear companyId from messageContent");
+				"Unable to remove companyId");
 		}
 	}
 
