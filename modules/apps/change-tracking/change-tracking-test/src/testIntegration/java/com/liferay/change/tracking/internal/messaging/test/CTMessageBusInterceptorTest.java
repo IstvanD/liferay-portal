@@ -87,7 +87,6 @@ public class CTMessageBusInterceptorTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(companyId);
 		subscriptionSender.setMailId(
 			CTMessageBusInterceptorTest.class.getName(), "test");
 
@@ -128,7 +127,6 @@ public class CTMessageBusInterceptorTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(companyId);
 		subscriptionSender.setMailId(
 			CTMessageBusInterceptorTest.class.getName(), "test");
 
