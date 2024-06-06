@@ -6,16 +6,13 @@
 package com.liferay.change.tracking.internal.upgrade.v2_12_3.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTMessage;
-import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTMessageLocalService;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -46,11 +43,6 @@ public class CTMessageCompanyIdUpgradeProcessTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_ctCollection = _ctCollectionLocalService.addCTCollection(
-			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			0, CTMessageCompanyIdUpgradeProcessTest.class.getSimpleName(),
-			null);
-
 		_upgradeProcess = UpgradeTestUtil.getUpgradeStep(
 			_upgradeStepRegistrator,
 			"com.liferay.change.tracking.internal.upgrade.v2_12_3." +
@@ -63,12 +55,14 @@ public class CTMessageCompanyIdUpgradeProcessTest {
 
 		long ctMessageId = RandomTestUtil.nextLong();
 
+		long ctCollectionId = RandomTestUtil.nextLong();
+
 		CTMessage ctMessage = _ctMessageLocalService.createCTMessage(
 			ctMessageId);
 
 		ctMessage.setCompanyId(companyId);
 
-		ctMessage.setCtCollectionId(_ctCollection.getCtCollectionId());
+		ctMessage.setCtCollectionId(ctCollectionId);
 
 		Message message = new Message();
 
@@ -98,15 +92,12 @@ public class CTMessageCompanyIdUpgradeProcessTest {
 		Assert.assertFalse(messageContent.contains("\"companyId\""));
 
 		List<Message> messages = _ctMessageLocalService.getMessages(
-			_ctCollection.getCtCollectionId());
+			ctCollectionId);
 
 		Message deserializedMessage = messages.get(0);
 
 		Assert.assertEquals(companyId, deserializedMessage.get("companyId"));
 	}
-
-	@Inject
-	private static CTCollectionLocalService _ctCollectionLocalService;
 
 	@Inject
 	private static CTMessageLocalService _ctMessageLocalService;
@@ -117,8 +108,5 @@ public class CTMessageCompanyIdUpgradeProcessTest {
 		filter = "(&(component.name=com.liferay.change.tracking.internal.upgrade.registry.ChangeTrackingServiceUpgradeStepRegistrator))"
 	)
 	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
-	@DeleteAfterTestRun
-	private CTCollection _ctCollection;
 
 }
