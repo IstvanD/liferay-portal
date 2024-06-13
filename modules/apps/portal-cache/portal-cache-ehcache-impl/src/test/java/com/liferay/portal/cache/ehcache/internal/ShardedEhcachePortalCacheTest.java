@@ -81,7 +81,7 @@ public class ShardedEhcachePortalCacheTest {
 			_baseEhcachePortalCacheManager, "_cacheManager", _cacheManager);
 
 		_dbPartitionUtilMockedStatic.when(
-			DBPartitionUtil::getCurrentCompanyId
+			CompanyThreadLocal::getNonsystemCompanyId
 		).thenAnswer(
 			(Answer<Long>)invocationOnMock -> {
 				long currentCompanyId = _companyIdThreadLocal.get();
