@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -519,6 +520,14 @@ public class DBPartitionUtil {
 				StringUtil.merge(columnNames), " from ", partitionName,
 				StringPool.PERIOD, tableName,
 				_getQuartzWhereClauseSQL(fromCompanyId, tableName)));
+
+		if (StringUtil.endsWith(tableName, "JOB_DETAILS")) {
+			String partitionTableName =
+				partitionName + StringPool.PERIOD + tableName;
+
+			_updateQuartzJobDataCompanyId(
+				partitionTableName, fromCompanyId, toCompanyId, statement);
+		}
 	}
 
 	private static void _deleteCompanyData(
@@ -1141,6 +1150,45 @@ public class DBPartitionUtil {
 		statement.executeUpdate(
 			_dbPartitionDB.getCreateViewSQL(
 				_defaultPartitionName, partitionName, tableName));
+	}
+
+	private static void _updateQuartzJobDataCompanyId(
+			String partitionTableName, long fromCompanyId, long toCompanyId,
+			Statement statement)
+		throws Exception {
+
+		Connection connection = statement.getConnection();
+
+		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
+				StringBundler.concat(
+					"select job_name, job_data from ", partitionTableName,
+					" where job_name like '%@", toCompanyId, "'"));
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					StringBundler.concat(
+						"update ", partitionTableName,
+						" set job_data = ? where job_name = ?"));
+			ResultSet resultSet = preparedStatement1.executeQuery()) {
+
+			while (resultSet.next()) {
+				String jobData = resultSet.getString("job_data");
+
+				String jobName = resultSet.getString("job_name");
+
+				preparedStatement2.setString(
+					1,
+					StringUtil.replace(
+						jobData, String.valueOf(fromCompanyId),
+						String.valueOf(toCompanyId)));
+
+				preparedStatement2.setString(2, jobName);
+
+				preparedStatement2.addBatch();
+			}
+
+			preparedStatement2.executeBatch();
+		}
 	}
 
 	private static Statement _wrapStatement(Statement statement) {
