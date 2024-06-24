@@ -39,6 +39,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.spring.hibernate.DialectDetector;
 import com.liferay.portal.util.PropsValues;
 
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -1172,17 +1173,18 @@ public class DBPartitionUtil {
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			while (resultSet.next()) {
-				String jobData = resultSet.getString("job_data");
+				Blob jobData = resultSet.getBlob("job_data");
 
-				String jobName = resultSet.getString("job_name");
+				String jobDataString = StringUtil.replace(
+					new String(jobData.getBytes(1, (int)jobData.length())),
+					String.valueOf(fromCompanyId), String.valueOf(toCompanyId));
+
+				jobData.setBytes(1, jobDataString.getBytes());
+
+				preparedStatement2.setBlob(1, jobData);
 
 				preparedStatement2.setString(
-					1,
-					StringUtil.replace(
-						jobData, String.valueOf(fromCompanyId),
-						String.valueOf(toCompanyId)));
-
-				preparedStatement2.setString(2, jobName);
+					2, resultSet.getString("job_name"));
 
 				preparedStatement2.addBatch();
 			}
