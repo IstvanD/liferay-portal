@@ -254,26 +254,29 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 
 	@Test
 	public void testCopyConfiguration() throws Exception {
-		for (long companyId : COMPANY_IDS) {
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-						companyId)) {
+		companyLocalService.forEachCompanyId(
+			companyId -> {
+				try (SafeCloseable safeCloseable =
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+							companyId)) {
 
-				int rowCount = -1;
+					int rowCount = -1;
 
-				try (PreparedStatement preparedStatement =
-						connection.prepareStatement(
-							"select count(1) from Configuration_");
-					ResultSet resultSet = preparedStatement.executeQuery()) {
+					try (PreparedStatement preparedStatement =
+							connection.prepareStatement(
+								"select count(1) from Configuration_");
+						ResultSet resultSet =
+							preparedStatement.executeQuery()) {
 
-					if (resultSet.next()) {
-						rowCount = resultSet.getInt(1);
+						if (resultSet.next()) {
+							rowCount = resultSet.getInt(1);
+						}
 					}
-				}
 
-				Assert.assertEquals(0, rowCount);
-			}
-		}
+					Assert.assertEquals(0, rowCount);
+				}
+			},
+			COMPANY_IDS);
 	}
 
 	@Test

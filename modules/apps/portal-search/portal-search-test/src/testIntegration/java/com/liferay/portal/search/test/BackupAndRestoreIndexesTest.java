@@ -9,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.IndexAdminHelper;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -40,16 +41,18 @@ public class BackupAndRestoreIndexesTest {
 	public void testBackupAndRestore() throws Exception {
 		Map<Long, String> backupNames = new HashMap<>();
 
-		for (long companyId : PortalInstancePool.getCompanyIds()) {
-			String backupName = StringUtil.lowerCase(
-				BackupAndRestoreIndexesTest.class.getName());
+		CompanyLocalServiceUtil.forEachCompanyId(
+			companyId -> {
+				String backupName = StringUtil.lowerCase(
+					BackupAndRestoreIndexesTest.class.getName());
 
-			backupName = backupName + "-" + System.currentTimeMillis();
+				backupName = backupName + "-" + System.currentTimeMillis();
 
-			_indexAdminHelper.backup(companyId, backupName);
+				_indexAdminHelper.backup(companyId, backupName);
 
-			backupNames.put(companyId, backupName);
-		}
+				backupNames.put(companyId, backupName);
+			},
+			PortalInstancePool.getCompanyIds());
 
 		_group = GroupTestUtil.addGroup();
 
