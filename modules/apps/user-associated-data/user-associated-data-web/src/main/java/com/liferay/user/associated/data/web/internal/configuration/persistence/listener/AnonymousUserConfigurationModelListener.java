@@ -35,8 +35,6 @@ public class AnonymousUserConfigurationModelListener
 	public void onBeforeSave(String pid, Dictionary<String, Object> properties)
 		throws ConfigurationModelListenerException {
 
-		// LPS-142491
-
 		long companyId = (long)properties.get("companyId");
 
 		try {
