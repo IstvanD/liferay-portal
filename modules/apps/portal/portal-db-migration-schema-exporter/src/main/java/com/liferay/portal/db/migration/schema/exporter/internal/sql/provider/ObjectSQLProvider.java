@@ -23,6 +23,7 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -116,17 +117,22 @@ public class ObjectSQLProvider implements SQLProvider {
 		try (Connection connection = dataSource.getConnection()) {
 			DBInspector dbInspector = new DBInspector(connection);
 
-			for (long companyId : _companyIds) {
-				List<ObjectDefinition> objectDefinitions =
-					ObjectDefinitionLocalServiceUtil.getObjectDefinitions(
-						companyId, WorkflowConstants.STATUS_APPROVED);
+			CompanyLocalServiceUtil.forEachCompanyId(
+				companyId -> {
+					List<ObjectDefinition> objectDefinitions =
+						ObjectDefinitionLocalServiceUtil.getObjectDefinitions(
+							companyId, WorkflowConstants.STATUS_APPROVED);
 
-				for (ObjectDefinition objectDefinition : objectDefinitions) {
-					_appendTablesSQL(dbInspector, objectDefinition);
+					for (ObjectDefinition objectDefinition :
+							objectDefinitions) {
 
-					_appendRelationshipTablesSQL(dbInspector, objectDefinition);
-				}
-			}
+						_appendTablesSQL(dbInspector, objectDefinition);
+
+						_appendRelationshipTablesSQL(
+							dbInspector, objectDefinition);
+					}
+				},
+				_companyIds);
 		}
 
 		if (_tablesSQLSB.index() > 0) {
