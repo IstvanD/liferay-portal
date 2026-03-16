@@ -9,7 +9,9 @@ import com.liferay.petra.concurrent.NoticeableExecutorService;
 import com.liferay.petra.concurrent.NoticeableFuture;
 import com.liferay.petra.executor.PortalExecutorManager;
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.search.background.task.ReindexStatusMessageSender;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
@@ -21,12 +23,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 /**
@@ -41,6 +45,15 @@ public class ReindexIndexReindexerBackgroundTaskExecutorTest {
 
 	@Before
 	public void setUp() throws Exception {
+		_portalInstancePoolMockedStatic = Mockito.mockStatic(
+			PortalInstancePool.class);
+
+		_portalInstancePoolMockedStatic.when(
+			PortalInstancePool::getDefaultCompanyId
+		).thenReturn(
+			0L
+		);
+
 		_reindexIndexReindexerBackgroundTaskExecutor =
 			new ReindexIndexReindexerBackgroundTaskExecutor();
 
@@ -97,7 +110,23 @@ public class ReindexIndexReindexerBackgroundTaskExecutorTest {
 				long[] companyIds = invocation.getArgument(1);
 
 				for (long currentCompanyId : companyIds) {
-					unsafeConsumer.accept(currentCompanyId);
+					Callable<Void> callable =
+						new CompanyInheritableThreadLocalCallable<>(
+							() -> {
+								unsafeConsumer.accept(currentCompanyId);
+
+								return null;
+							});
+
+					ReflectionTestUtil.setFieldValue(
+						callable, "_companyId", currentCompanyId);
+
+					try {
+						callable.call();
+					}
+					catch (Exception exception) {
+						throw new RuntimeException(exception);
+					}
 				}
 
 				return null;
@@ -109,13 +138,20 @@ public class ReindexIndexReindexerBackgroundTaskExecutorTest {
 		);
 	}
 
+	@After
+	public void tearDown() {
+		if (_portalInstancePoolMockedStatic != null) {
+			_portalInstancePoolMockedStatic.close();
+		}
+	}
+
 	@Test
 	public void testDatabasePartitioning() throws Exception {
 		Mockito.doAnswer(
 			invocation -> {
 				Assert.assertEquals(
 					invocation.getArgument(0),
-					CompanyThreadLocal.getCompanyId());
+					(Long)CompanyThreadLocal.getCompanyId());
 
 				return null;
 			}
@@ -187,6 +223,7 @@ public class ReindexIndexReindexerBackgroundTaskExecutorTest {
 		Mockito.mock(NoticeableExecutorService.class);
 	private final PortalExecutorManager _portalExecutorManager = Mockito.mock(
 		PortalExecutorManager.class);
+	private MockedStatic<PortalInstancePool> _portalInstancePoolMockedStatic;
 	private ReindexIndexReindexerBackgroundTaskExecutor
 		_reindexIndexReindexerBackgroundTaskExecutor;
 	private final ReindexStatusMessageSender _reindexStatusMessageSender =
