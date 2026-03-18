@@ -6,17 +6,15 @@
 package com.liferay.segments.internal.configuration.provider;
 
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.CompanyThreadLocalManagedServiceFactory;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -278,12 +276,7 @@ public class SegmentsConfigurationProviderImpl
 	private ServiceRegistration<ManagedServiceFactory> _serviceRegistration;
 
 	private class SegmentsCompanyConfigurationManagedServiceFactory
-		implements ManagedServiceFactory {
-
-		@Override
-		public void deleted(String pid) {
-			_unmapPid(pid);
-		}
+		extends CompanyThreadLocalManagedServiceFactory {
 
 		@Override
 		public String getName() {
@@ -292,24 +285,23 @@ public class SegmentsConfigurationProviderImpl
 		}
 
 		@Override
-		public void updated(String pid, Dictionary<String, ?> dictionary) {
+		protected void doDeleted(long companyId, String pid) {
+			_unmapPid(pid);
+		}
+
+		@Override
+		protected void doUpdated(
+			long companyId, String pid, Dictionary<String, ?> properties) {
+
 			_unmapPid(pid);
 
-			long companyId = GetterUtil.getLong(
-				dictionary.get("companyId"), CompanyConstants.SYSTEM);
-
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-						companyId)) {
-
-				if (companyId != CompanyConstants.SYSTEM) {
-					_segmentsCompanyConfigurations.put(
-						companyId,
-						ConfigurableUtil.createConfigurable(
-							SegmentsCompanyConfiguration.class, dictionary));
-					_companyIds.put(pid, companyId);
-					_pids.put(companyId, pid);
-				}
+			if (companyId != CompanyConstants.SYSTEM) {
+				_segmentsCompanyConfigurations.put(
+					companyId,
+					ConfigurableUtil.createConfigurable(
+						SegmentsCompanyConfiguration.class, properties));
+				_companyIds.put(pid, companyId);
+				_pids.put(companyId, pid);
 			}
 		}
 

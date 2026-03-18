@@ -13,10 +13,10 @@ import com.liferay.analytics.settings.configuration.AnalyticsConfigurationRegist
 import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.analytics.settings.security.constants.AnalyticsSecurityConstants;
 import com.liferay.petra.executor.PortalExecutorManager;
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.CompanyThreadLocalManagedServiceFactory;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
@@ -28,7 +28,6 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -1054,21 +1053,7 @@ public class AnalyticsConfigurationRegistryImpl
 	private UserLocalService _userLocalService;
 
 	private class AnalyticsConfigurationManagedServiceFactory
-		implements ManagedServiceFactory {
-
-		@Override
-		public void deleted(String pid) {
-			long companyId = getCompanyId(pid);
-
-			_unmapPid(pid);
-
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-						companyId)) {
-
-				_disable(companyId);
-			}
-		}
+		extends CompanyThreadLocalManagedServiceFactory {
 
 		@Override
 		public String getName() {
@@ -1077,18 +1062,19 @@ public class AnalyticsConfigurationRegistryImpl
 		}
 
 		@Override
-		public void updated(String pid, Dictionary<String, ?> dictionary) {
+		protected void doDeleted(long companyId, String pid) {
 			_unmapPid(pid);
 
-			long companyId = GetterUtil.getLong(
-				dictionary.get("companyId"), CompanyConstants.SYSTEM);
+			_disable(companyId);
+		}
 
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-						companyId)) {
+		@Override
+		protected void doUpdated(
+			long companyId, String pid, Dictionary<String, ?> properties) {
 
-				_updated(companyId, pid, dictionary);
-			}
+			_unmapPid(pid);
+
+			_updated(companyId, pid, properties);
 		}
 
 	}
