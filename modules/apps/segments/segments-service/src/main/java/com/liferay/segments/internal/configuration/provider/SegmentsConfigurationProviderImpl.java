@@ -52,7 +52,9 @@ public class SegmentsConfigurationProviderImpl
 
 	@Override
 	public void clearSegmentsCompanyConfigurations() {
-		_companyIds.clear();
+		_segmentsCompanyConfigurationManagedServiceFactory.getCompanyIdsMap(
+		).clear();
+
 		_pids.clear();
 		_segmentsCompanyConfigurations.clear();
 	}
@@ -229,7 +231,7 @@ public class SegmentsConfigurationProviderImpl
 
 		_serviceRegistration = bundleContext.registerService(
 			ManagedServiceFactory.class,
-			new SegmentsCompanyConfigurationManagedServiceFactory(),
+			_segmentsCompanyConfigurationManagedServiceFactory,
 			HashMapDictionaryBuilder.put(
 				Constants.SERVICE_PID,
 				"com.liferay.segments.configuration." +
@@ -248,16 +250,10 @@ public class SegmentsConfigurationProviderImpl
 			SegmentsConfiguration.class, properties);
 	}
 
-	private void _unmapPid(String pid) {
-		Long companyId = _companyIds.remove(pid);
-
-		if (companyId != null) {
-			_pids.remove(companyId);
-			_segmentsCompanyConfigurations.remove(companyId);
-		}
+	private void _unmapPid(long companyId) {
+		_pids.remove(companyId);
+		_segmentsCompanyConfigurations.remove(companyId);
 	}
-
-	private final Map<String, Long> _companyIds = new ConcurrentHashMap<>();
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
@@ -270,6 +266,9 @@ public class SegmentsConfigurationProviderImpl
 	@Reference
 	private Portal _portal;
 
+	private final SegmentsCompanyConfigurationManagedServiceFactory
+		_segmentsCompanyConfigurationManagedServiceFactory =
+			new SegmentsCompanyConfigurationManagedServiceFactory();
 	private final Map<Long, SegmentsCompanyConfiguration>
 		_segmentsCompanyConfigurations = new ConcurrentHashMap<>();
 	private volatile SegmentsConfiguration _segmentsConfiguration;
@@ -277,6 +276,10 @@ public class SegmentsConfigurationProviderImpl
 
 	private class SegmentsCompanyConfigurationManagedServiceFactory
 		extends CompanyThreadLocalManagedServiceFactory {
+
+		public Map<String, Long> getCompanyIdsMap() {
+			return companyIds;
+		}
 
 		@Override
 		public String getName() {
@@ -286,21 +289,20 @@ public class SegmentsConfigurationProviderImpl
 
 		@Override
 		protected void doDeleted(long companyId, String pid) {
-			_unmapPid(pid);
+			_unmapPid(companyId);
 		}
 
 		@Override
 		protected void doUpdated(
 			long companyId, String pid, Dictionary<String, ?> properties) {
 
-			_unmapPid(pid);
+			_unmapPid(companyId);
 
 			if (companyId != CompanyConstants.SYSTEM) {
 				_segmentsCompanyConfigurations.put(
 					companyId,
 					ConfigurableUtil.createConfigurable(
 						SegmentsCompanyConfiguration.class, properties));
-				_companyIds.put(pid, companyId);
 				_pids.put(companyId, pid);
 			}
 		}

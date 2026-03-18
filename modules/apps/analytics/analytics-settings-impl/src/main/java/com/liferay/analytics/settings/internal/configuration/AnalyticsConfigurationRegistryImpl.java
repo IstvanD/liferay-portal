@@ -85,7 +85,11 @@ public class AnalyticsConfigurationRegistryImpl
 
 	@Override
 	public AnalyticsConfiguration getAnalyticsConfiguration(String pid) {
-		Long companyId = _companyIds.get(pid);
+		Long companyId =
+			_analyticsConfigurationManagedServiceFactory.getCompanyIdsMap(
+			).get(
+				pid
+			);
 
 		if (companyId == null) {
 			return _systemAnalyticsConfiguration;
@@ -102,7 +106,10 @@ public class AnalyticsConfigurationRegistryImpl
 			return null;
 		}
 
-		for (Map.Entry<String, Long> entry : _companyIds.entrySet()) {
+		for (Map.Entry<String, Long> entry :
+				_analyticsConfigurationManagedServiceFactory.getCompanyIdsMap(
+				).entrySet()) {
+
 			if (Objects.equals(entry.getValue(), companyId)) {
 				try {
 					Configuration configuration =
@@ -134,7 +141,10 @@ public class AnalyticsConfigurationRegistryImpl
 
 	@Override
 	public long getCompanyId(String pid) {
-		return _companyIds.getOrDefault(pid, CompanyConstants.SYSTEM);
+		return _analyticsConfigurationManagedServiceFactory.getCompanyIdsMap(
+		).getOrDefault(
+			pid, CompanyConstants.SYSTEM
+		);
 	}
 
 	@Override
@@ -171,7 +181,7 @@ public class AnalyticsConfigurationRegistryImpl
 			AnalyticsConfigurationRegistryImpl.class.getName());
 		_serviceRegistration = bundleContext.registerService(
 			ManagedServiceFactory.class,
-			new AnalyticsConfigurationManagedServiceFactory(),
+			_analyticsConfigurationManagedServiceFactory,
 			HashMapDictionaryBuilder.put(
 				Constants.SERVICE_PID,
 				"com.liferay.analytics.settings.configuration." +
@@ -929,23 +939,16 @@ public class AnalyticsConfigurationRegistryImpl
 		}
 	}
 
-	private void _unmapPid(String pid) {
-		Long companyId = _companyIds.remove(pid);
-
-		if (companyId != null) {
-			_analyticsConfigurations.remove(companyId);
-		}
+	private void _unmapPid(long companyId) {
+		_analyticsConfigurations.remove(companyId);
 	}
 
-	private void _updated(
-		long companyId, String pid, Dictionary<String, ?> dictionary) {
-
+	private void _updated(long companyId, Dictionary<String, ?> dictionary) {
 		if (companyId != CompanyConstants.SYSTEM) {
 			_analyticsConfigurations.put(
 				companyId,
 				ConfigurableUtil.createConfigurable(
 					AnalyticsConfiguration.class, dictionary));
-			_companyIds.put(pid, companyId);
 		}
 
 		if (!_initializedCompanyIds.contains(companyId)) {
@@ -1010,6 +1013,9 @@ public class AnalyticsConfigurationRegistryImpl
 	private final Map<Long, Boolean> _activatedCompanyIds =
 		new ConcurrentHashMap<>();
 	private boolean _active;
+	private final AnalyticsConfigurationManagedServiceFactory
+		_analyticsConfigurationManagedServiceFactory =
+			new AnalyticsConfigurationManagedServiceFactory();
 	private final Map<Long, AnalyticsConfiguration> _analyticsConfigurations =
 		new ConcurrentHashMap<>();
 
@@ -1018,8 +1024,6 @@ public class AnalyticsConfigurationRegistryImpl
 
 	@Reference
 	private AnalyticsSettingsManager _analyticsSettingsManager;
-
-	private final Map<String, Long> _companyIds = new ConcurrentHashMap<>();
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
@@ -1055,6 +1059,10 @@ public class AnalyticsConfigurationRegistryImpl
 	private class AnalyticsConfigurationManagedServiceFactory
 		extends CompanyThreadLocalManagedServiceFactory {
 
+		public Map<String, Long> getCompanyIdsMap() {
+			return companyIds;
+		}
+
 		@Override
 		public String getName() {
 			return "com.liferay.analytics.settings.configuration." +
@@ -1063,7 +1071,7 @@ public class AnalyticsConfigurationRegistryImpl
 
 		@Override
 		protected void doDeleted(long companyId, String pid) {
-			_unmapPid(pid);
+			_unmapPid(companyId);
 
 			_disable(companyId);
 		}
@@ -1072,9 +1080,9 @@ public class AnalyticsConfigurationRegistryImpl
 		protected void doUpdated(
 			long companyId, String pid, Dictionary<String, ?> properties) {
 
-			_unmapPid(pid);
+			_unmapPid(companyId);
 
-			_updated(companyId, pid, properties);
+			_updated(companyId, properties);
 		}
 
 	}

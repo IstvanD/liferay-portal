@@ -24,7 +24,7 @@ public abstract class CompanyThreadLocalManagedServiceFactory
 
 	@Override
 	public final void deleted(String pid) {
-		Long companyId = _companyIds.remove(pid);
+		Long companyId = companyIds.remove(pid);
 
 		if (companyId == null) {
 			companyId = CompanyConstants.SYSTEM;
@@ -42,7 +42,7 @@ public abstract class CompanyThreadLocalManagedServiceFactory
 		long companyId = GetterUtil.getLong(
 			properties.get("companyId"), CompanyConstants.SYSTEM);
 
-		_companyIds.put(pid, companyId);
+		companyIds.put(pid, companyId);
 
 		try (SafeCloseable safeCloseable =
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
@@ -56,6 +56,6 @@ public abstract class CompanyThreadLocalManagedServiceFactory
 	protected abstract void doUpdated(
 		long companyId, String pid, Dictionary<String, ?> properties);
 
-	private final Map<String, Long> _companyIds = new ConcurrentHashMap<>();
+	protected final Map<String, Long> companyIds = new ConcurrentHashMap<>();
 
 }
