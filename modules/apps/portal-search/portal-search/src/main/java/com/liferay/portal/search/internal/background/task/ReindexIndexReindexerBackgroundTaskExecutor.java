@@ -6,14 +6,13 @@
 package com.liferay.portal.search.internal.background.task;
 
 import com.liferay.petra.executor.PortalExecutorManager;
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.background.task.ReindexBackgroundTaskConstants;
 import com.liferay.portal.kernel.search.background.task.ReindexStatusMessageSender;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.spi.reindexer.IndexReindexer;
@@ -89,11 +88,8 @@ public class ReindexIndexReindexerBackgroundTaskExecutor
 		_companyLocalService.forEachCompanyId(
 			companyId -> futures.add(
 				executorService.submit(
-					() -> {
-						try (SafeCloseable safeCloseable =
-								CompanyThreadLocal.
-									setCompanyIdWithSafeCloseable(companyId)) {
-
+					new CompanyInheritableThreadLocalCallable<>(
+						() -> {
 							if (startPhase != null) {
 								_reindexStatusMessageSender.sendStatusMessage(
 									startPhase, companyId, companyIds);
@@ -123,10 +119,9 @@ public class ReindexIndexReindexerBackgroundTaskExecutor
 										className, " with execution mode ",
 										executionMode));
 							}
-						}
 
-						return null;
-					})),
+							return null;
+						}))),
 			companyIds);
 
 		for (Future<?> future : futures) {
