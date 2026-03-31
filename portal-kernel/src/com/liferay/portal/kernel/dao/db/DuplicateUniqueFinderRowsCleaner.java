@@ -16,8 +16,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,10 @@ public class DuplicateUniqueFinderRowsCleaner {
 	}
 
 	public void deleteDuplicates() throws Exception {
+		if (_hasUnpopulatedColumn()) {
+			return;
+		}
+
 		List<String[]> duplicateColumnValuesList =
 			_getDuplicateColumnValuesList();
 
@@ -215,6 +221,85 @@ public class DuplicateUniqueFinderRowsCleaner {
 		}
 
 		return duplicateRows;
+	}
+
+	private boolean _hasUnpopulatedColumn() throws Exception {
+		Map<String, Integer> columnDataTypes = new HashMap<>();
+
+		DatabaseMetaData databaseMetaData = _connection.getMetaData();
+
+		DBInspector dbInspector = new DBInspector(_connection);
+
+		try (ResultSet resultSet = databaseMetaData.getColumns(
+				dbInspector.getCatalog(), dbInspector.getSchema(),
+				dbInspector.normalizeName(_tableName, databaseMetaData),
+				null)) {
+
+			while (resultSet.next()) {
+				columnDataTypes.put(
+					StringUtil.toLowerCase(resultSet.getString("COLUMN_NAME")),
+					resultSet.getInt("DATA_TYPE"));
+			}
+		}
+
+		StringBundler sb = new StringBundler((_columnNames.length * 9) + 4);
+
+		sb.append("select ");
+		sb.append(StringUtil.merge(_columnNames, ", "));
+		sb.append(" from ");
+		sb.append(_tableName);
+		sb.append(" where ");
+
+		for (int i = 0; i < _columnNames.length; i++) {
+			String columnName = _columnNames[i];
+
+			sb.append("(");
+			sb.append(columnName);
+			sb.append(" is null ");
+
+			Integer dataType = columnDataTypes.get(
+				StringUtil.toLowerCase(columnName));
+
+			if ((dataType != null) &&
+				((dataType == Types.CHAR) || (dataType == Types.LONGNVARCHAR) ||
+				 (dataType == Types.LONGVARCHAR) || (dataType == Types.NCHAR) ||
+				 (dataType == Types.NVARCHAR) || (dataType == Types.VARCHAR))) {
+
+				sb.append("or ");
+				sb.append(columnName);
+				sb.append(" = ''");
+			}
+
+			sb.append(")");
+
+			if (i < (_columnNames.length - 1)) {
+				sb.append(" or ");
+			}
+		}
+
+		try (PreparedStatement preparedStatement = _connection.prepareStatement(
+				sb.toString());
+
+			ResultSet resultSet = preparedStatement.executeQuery()) {
+
+			if (resultSet.next()) {
+				for (String columnName : _columnNames) {
+					String value = resultSet.getString(columnName);
+
+					if ((value == null) || value.isEmpty()) {
+						_log.error(
+							StringBundler.concat(
+								"Cannot delete duplicate records in table ",
+								_tableName, " because column ", columnName,
+								" has null or empty values"));
+
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
