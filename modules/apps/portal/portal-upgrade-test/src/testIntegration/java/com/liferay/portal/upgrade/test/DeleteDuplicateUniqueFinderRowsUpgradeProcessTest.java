@@ -221,6 +221,37 @@ public class DeleteDuplicateUniqueFinderRowsUpgradeProcessTest {
 		_assertIndexes("Ticket", indexMetadatas);
 	}
 
+	@Test
+	public void testUpgradeTicketUnpopulatedColumn() throws Exception {
+		List<IndexMetadata> indexMetadatas = _dropUniqueIndexes(
+			"Ticket", "key_");
+
+		Ticket ticket1 = _ticketLocalService.createTicket(101);
+
+		ticket1.setKey("");
+
+		List<Ticket> tickets = new ArrayList<>();
+
+		tickets.add(_ticketLocalService.addTicket(ticket1));
+
+		Ticket ticket2 = ticket1.cloneWithOriginalValues();
+
+		ticket2.setTicketId(102);
+
+		tickets.add(_ticketLocalService.addTicket(ticket2));
+
+		try {
+			_runUpgrade("Ticket", new String[] {"key_"}, "ticketId asc", false);
+		}
+		finally {
+			for (Ticket ticket : tickets) {
+				_ticketLocalService.deleteTicket(ticket);
+			}
+
+			_assertIndexes("Ticket", indexMetadatas);
+		}
+	}
+
 	private void _assertCount(
 			String tableName, String[] columnNames, boolean duplicatesRemoved)
 		throws Exception {
@@ -274,6 +305,14 @@ public class DeleteDuplicateUniqueFinderRowsUpgradeProcessTest {
 			String tableName, String[] columnNames, String orderByClause)
 		throws Exception {
 
+		_runUpgrade(tableName, columnNames, orderByClause, true);
+	}
+
+	private void _runUpgrade(
+			String tableName, String[] columnNames, String orderByClause,
+			boolean duplicatesRemoved)
+		throws Exception {
+
 		_assertCount(tableName, columnNames, false);
 
 		DeleteDuplicateUniqueFinderRowsUpgradeProcess upgradeProcess =
@@ -291,7 +330,7 @@ public class DeleteDuplicateUniqueFinderRowsUpgradeProcessTest {
 			EntityCacheUtil.clearCache();
 		}
 
-		_assertCount(tableName, columnNames, true);
+		_assertCount(tableName, columnNames, duplicatesRemoved);
 	}
 
 	@Inject
