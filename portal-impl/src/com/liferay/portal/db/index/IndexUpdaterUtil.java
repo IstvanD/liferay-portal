@@ -222,36 +222,43 @@ public class IndexUpdaterUtil {
 		_processedServletContextNames.clear();
 	}
 
-	private static void _deleteDuplicates(
+	private static boolean _deleteDuplicates(
 			Connection connection, DB db, String tableName, String indexesSQL)
 		throws Exception {
 
 		Matcher matcher = _uniqueIndexPattern.matcher(indexesSQL);
 
 		DBInspector dbInspector = new DBInspector(connection);
+		boolean duplicatesDeleted = false;
 
 		while (matcher.find()) {
 			if (dbInspector.hasIndex(tableName, matcher.group(1))) {
 				continue;
 			}
 
-			String indexColumns = matcher.group(2);
+			String[] columnNames = StringUtil.split(
+				matcher.group(
+					2
+				).replaceAll(
+					"\\[\\$COLUMN_LENGTH:(\\d+)\\$\\]", StringPool.BLANK
+				),
+				StringPool.COMMA_AND_SPACE);
+
 			String orderByColumns = StringUtil.merge(
 				db.getPrimaryKeyColumnNames(connection, tableName),
 				StringPool.COMMA_AND_SPACE);
 
 			DuplicateUniqueFinderRowsCleaner duplicateUniqueFinderRowsCleaner =
 				new DuplicateUniqueFinderRowsCleaner(
-					connection, tableName,
-					StringUtil.split(
-						indexColumns.replaceAll(
-							"\\[\\$COLUMN_LENGTH:(\\d+)\\$\\]",
-							StringPool.BLANK),
-						StringPool.COMMA_AND_SPACE),
+					connection, tableName, columnNames,
 					orderByColumns + " asc");
 
-			duplicateUniqueFinderRowsCleaner.deleteDuplicates();
+			if (duplicateUniqueFinderRowsCleaner.deleteDuplicates()) {
+				duplicatesDeleted = true;
+			}
 		}
+
+		return duplicatesDeleted;
 	}
 
 	private static ExecutorService _getExecutorService() {
@@ -330,11 +337,12 @@ public class IndexUpdaterUtil {
 							throw sqlException;
 						}
 
-						_deleteDuplicates(
-							connection, db, tableName, indexesSQL);
+						if (_deleteDuplicates(
+								connection, db, tableName, indexesSQL)) {
 
-						db.updateIndexes(
-							connection, tableName, indexesSQL, true);
+							db.updateIndexes(
+								connection, tableName, indexesSQL, true);
+						}
 					}
 				}
 				catch (Exception exception) {
