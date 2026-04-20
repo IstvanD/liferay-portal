@@ -30,9 +30,7 @@ import org.mockito.Mockito;
 public class UpgradeLogProgressTrackerTest {
 
 	@Test
-	public void testBaseDBProcessGetConnectionCallsGetConnectionWrapper()
-		throws Exception {
-
+	public void testBaseDBProcessGetConnectionCallsWrap() throws Exception {
 		try (SafeCloseable safeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
 					"UPGRADE_LOG_PROGRESS_ENABLED", true);
@@ -44,7 +42,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			upgradeLogProgressTrackerMockedStatic.when(
-				() -> UpgradeLogProgressTracker.getConnectionWrapper(
+				() -> UpgradeLogProgressTracker.wrap(
 					Mockito.any(Connection.class))
 			).thenAnswer(
 				invocation -> invocation.getArgument(0)
@@ -60,7 +58,7 @@ public class UpgradeLogProgressTrackerTest {
 				});
 
 			upgradeLogProgressTrackerMockedStatic.verify(
-				() -> UpgradeLogProgressTracker.getConnectionWrapper(
+				() -> UpgradeLogProgressTracker.wrap(
 					Mockito.any(Connection.class)));
 
 			UpgradeLogProgressTracker.stop();
@@ -68,7 +66,7 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
-	public void testGetConnectionWrapperDisabled() throws Exception {
+	public void testWrapDisabled() throws Exception {
 		try (SafeCloseable safeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
 					"UPGRADE_LOG_PROGRESS_ENABLED", false)) {
@@ -77,8 +75,8 @@ public class UpgradeLogProgressTrackerTest {
 
 			Connection connection = Mockito.mock(Connection.class);
 
-			Connection wrappedConnection =
-				UpgradeLogProgressTracker.getConnectionWrapper(connection);
+			Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
+				connection);
 
 			Assert.assertSame(connection, wrappedConnection);
 
@@ -87,7 +85,7 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
-	public void testGetConnectionWrapperEnabled() throws Exception {
+	public void testWrapEnabled() throws Exception {
 		try (SafeCloseable safeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
 					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
@@ -97,8 +95,8 @@ public class UpgradeLogProgressTrackerTest {
 
 				Connection connection = Mockito.mock(Connection.class);
 
-				Connection wrappedConnection =
-					UpgradeLogProgressTracker.getConnectionWrapper(connection);
+				Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
+					connection);
 
 				Assert.assertNotSame(connection, wrappedConnection);
 
