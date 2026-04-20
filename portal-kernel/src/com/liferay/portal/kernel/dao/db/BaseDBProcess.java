@@ -346,7 +346,7 @@ public abstract class BaseDBProcess implements DBProcess {
 		connection = UpgradeSQLRecorder.getConnectionWrapper(
 			connection, ClassUtil.getClassName(this));
 
-		return UpgradeLogProgressTracker.getConnectionWrapper(connection);
+		return UpgradeLogProgressTracker.wrap(connection);
 	}
 
 	protected String[] getPrimaryKeyColumnNames(

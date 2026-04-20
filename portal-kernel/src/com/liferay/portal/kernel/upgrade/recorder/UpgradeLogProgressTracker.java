@@ -29,7 +29,25 @@ import java.util.Objects;
  */
 public class UpgradeLogProgressTracker {
 
-	public static Connection getConnectionWrapper(Connection connection) {
+	public static void start() {
+		if (!PropsValues.UPGRADE_LOG_PROGRESS_ENABLED) {
+			return;
+		}
+
+		_enabled = true;
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Granular progress logging for upgrades is enabled. This may " +
+					"decrease performance.");
+		}
+	}
+
+	public static void stop() {
+		_enabled = false;
+	}
+
+	public static Connection wrap(Connection connection) {
 		if (!_enabled) {
 			return connection;
 		}
@@ -154,24 +172,6 @@ public class UpgradeLogProgressTracker {
 			}
 
 		};
-	}
-
-	public static void start() {
-		if (!PropsValues.UPGRADE_LOG_PROGRESS_ENABLED) {
-			return;
-		}
-
-		_enabled = true;
-
-		if (_log.isWarnEnabled()) {
-			_log.warn(
-				"Granular progress logging for upgrades is enabled. This may " +
-					"decrease performance.");
-		}
-	}
-
-	public static void stop() {
-		_enabled = false;
 	}
 
 	private static ResultSet _wrap(
