@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.recorder.UpgradeLogProgressTracker;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.tools.DBUpgrader;
@@ -205,8 +206,8 @@ public class UpgradeReportTest {
 
 		List<String> expectedKeys = List.of(
 			"execution.date", "execution.time", "errors", "failed.sqls",
-			"warnings", "longest.upgrade.processes", "longest.running.sqls",
-			"data.clean.up");
+			"last.known.progresses", "warnings", "longest.upgrade.processes",
+			"longest.running.sqls", "data.clean.up");
 
 		Assert.assertEquals(expectedKeys, actualKeys);
 	}
@@ -310,6 +311,45 @@ public class UpgradeReportTest {
 		Assert.assertEquals(
 			tableCounts.toString(), Long.valueOf(3000000000L),
 			tableCounts.get("HugeTable"));
+	}
+
+	@Test
+	public void testLastKnownProgressesSection() {
+		_dataAccessMockedStatic.when(
+			DataAccess::getConnection
+		).thenReturn(
+			Mockito.mock(Connection.class)
+		);
+
+		int currentRow = RandomTestUtil.randomInt();
+
+		String upgradeProcessClassName =
+			"com.liferay.test.SampleUpgradeProcess";
+
+		try (MockedStatic<UpgradeLogProgressTracker>
+				upgradeLogProgressTrackerMockedStatic = Mockito.mockStatic(
+					UpgradeLogProgressTracker.class)) {
+
+			upgradeLogProgressTrackerMockedStatic.when(
+				UpgradeLogProgressTracker::getLastKnownProgresses
+			).thenReturn(
+				HashMapBuilder.put(
+					upgradeProcessClassName, currentRow
+				).build()
+			);
+
+			Map<String, Object> reportDataDiagnostics =
+				ReflectionTestUtil.invoke(
+					new UpgradeReport(), "_getReportDataDiagnostics",
+					new Class<?>[] {UpgradeRecorder.class}, _upgradeRecorder);
+
+			Assert.assertEquals(
+				List.of(
+					StringBundler.concat(
+						upgradeProcessClassName, " processed approximately ",
+						currentRow, " rows")),
+				reportDataDiagnostics.get("last.known.progresses"));
+		}
 	}
 
 	private MockedStatic<DataAccess> _dataAccessMockedStatic;
