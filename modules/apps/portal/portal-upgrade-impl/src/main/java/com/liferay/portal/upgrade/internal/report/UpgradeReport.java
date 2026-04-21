@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.model.ReleaseConstants;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.upgrade.ReleaseManager;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.recorder.UpgradeLogProgressTracker;
 import com.liferay.portal.kernel.upgrade.recorder.UpgradeSQLRecorder;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.EnvPropertiesUtil;
@@ -577,6 +578,14 @@ public class UpgradeReport {
 			_getMessagesPrinters(true, upgradeRecorder.getErrorMessages())
 		).put(
 			"failed.sqls", UpgradeSQLRecorder.getFailedSQLs()
+		).put(
+			"last.known.progresses",
+			TransformUtil.transform(
+				UpgradeLogProgressTracker.getLastKnownProgresses(
+				).entrySet(),
+				entry -> StringBundler.concat(
+					entry.getKey(), " processed approximately ",
+					entry.getValue(), " rows"))
 		).put(
 			"warnings",
 			_getMessagesPrinters(true, upgradeRecorder.getWarningMessages())
