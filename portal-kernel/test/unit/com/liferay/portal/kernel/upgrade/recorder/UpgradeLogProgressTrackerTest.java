@@ -6,9 +6,17 @@
 package com.liferay.portal.kernel.upgrade.recorder;
 
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 
 import java.lang.reflect.Method;
 
@@ -18,7 +26,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import java.util.List;
+import java.util.Map;
+
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.mockito.MockedStatic;
@@ -28,6 +41,18 @@ import org.mockito.Mockito;
  * @author István András Dézsi
  */
 public class UpgradeLogProgressTrackerTest {
+
+	@Before
+	public void setUp() {
+		_originalLog = ReflectionTestUtil.getFieldValue(
+			UpgradeLogProgressTracker.class, "_log");
+	}
+
+	@After
+	public void tearDown() {
+		ReflectionTestUtil.setFieldValue(
+			UpgradeLogProgressTracker.class, "_log", _originalLog);
+	}
 
 	@Test
 	public void testBaseDBProcessGetConnectionCallsWrap() throws Exception {
@@ -43,7 +68,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			upgradeLogProgressTrackerMockedStatic.when(
 				() -> UpgradeLogProgressTracker.wrap(
-					Mockito.any(Connection.class))
+					Mockito.any(Connection.class), Mockito.anyString())
 			).thenAnswer(
 				invocation -> invocation.getArgument(0)
 			);
@@ -59,9 +84,400 @@ public class UpgradeLogProgressTrackerTest {
 
 			upgradeLogProgressTrackerMockedStatic.verify(
 				() -> UpgradeLogProgressTracker.wrap(
-					Mockito.any(Connection.class)));
+					Mockito.any(Connection.class), Mockito.anyString()));
 
 			UpgradeLogProgressTracker.stop();
+		}
+	}
+
+	@Test
+	public void testDelegationSafety() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				String columnName = RandomTestUtil.randomString();
+				String columnValue = RandomTestUtil.randomString();
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					resultSet.getString(columnName)
+				).thenReturn(
+					columnValue
+				);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					"com.liferay.test.SampleUpgradeProcess", resultSet);
+
+				Assert.assertEquals(
+					columnValue, wrappedResultSet.getString(columnName));
+
+				Mockito.verify(
+					log, Mockito.never()
+				).info(
+					Mockito.anyString()
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testLogFallsBackToQueryWhenClassNameBlank() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int currentRow = RandomTestUtil.randomInt();
+
+				ResultSet resultSet = _mockResultSet(currentRow);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					StringPool.BLANK, resultSet);
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				Mockito.verify(
+					log
+				).info(
+					StringBundler.concat(
+						"Query is still executing. Processed ", currentRow,
+						" rows.")
+				);
+
+				Map<String, Integer> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertTrue(lastKnownProgresses.isEmpty());
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testNextDoesNotLogBeforeInterval() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", Long.MAX_VALUE)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int currentRow = RandomTestUtil.randomInt();
+
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet resultSet = _mockResultSet(currentRow);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					upgradeProcessClassName, resultSet);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				Mockito.verify(
+					log, Mockito.never()
+				).info(
+					Mockito.anyString()
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testNextDoesNotLogOnEndOfResultSet() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					resultSet.next()
+				).thenReturn(
+					false
+				);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					upgradeProcessClassName, resultSet);
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertFalse(wrappedResultSet.next());
+
+				Mockito.verify(
+					log, Mockito.never()
+				).info(
+					Mockito.anyString()
+				);
+
+				Map<String, Integer> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertFalse(
+					lastKnownProgresses.containsKey(upgradeProcessClassName));
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testNextLogReachesLogger() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			try {
+				UpgradeLogProgressTracker.start();
+
+				try (LogCapture logCapture =
+						LoggerTestUtil.configureLog4JLogger(
+							UpgradeLogProgressTracker.class.getName(),
+							LoggerTestUtil.WARN)) {
+
+					logCapture.resetPriority(LoggerTestUtil.INFO);
+
+					int currentRow = RandomTestUtil.randomInt();
+
+					String upgradeProcessClassName =
+						"com.liferay.test.SampleUpgradeProcess";
+
+					ResultSet resultSet = _mockResultSet(currentRow);
+
+					ResultSet wrappedResultSet = _wrapResultSet(
+						upgradeProcessClassName, resultSet);
+
+					ReflectionTestUtil.setFieldValue(
+						ProxyUtil.getInvocationHandler(wrappedResultSet),
+						"_lastLogTime", 0L);
+
+					Assert.assertTrue(wrappedResultSet.next());
+
+					List<LogEntry> logEntries = logCapture.getLogEntries();
+
+					Assert.assertEquals(
+						logEntries.toString(), 1, logEntries.size());
+
+					Assert.assertEquals(
+						StringBundler.concat(
+							upgradeProcessClassName,
+							" is still executing. Processed ", currentRow,
+							" rows."),
+						logEntries.get(
+							0
+						).getMessage());
+				}
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testNextLogsAfterIntervalWithClassName() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int currentRow = RandomTestUtil.randomInt();
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet resultSet = _mockResultSet(currentRow);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					upgradeProcessClassName, resultSet);
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				Mockito.verify(
+					log
+				).info(
+					StringBundler.concat(
+						upgradeProcessClassName,
+						" is still executing. Processed ", currentRow, " rows.")
+				);
+
+				Map<String, Integer> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertEquals(
+					Integer.valueOf(currentRow),
+					lastKnownProgresses.get(upgradeProcessClassName));
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testNextLogsRepeatedlyAcrossIntervals() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int currentRow = RandomTestUtil.randomInt();
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet resultSet = _mockResultSet(currentRow);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					upgradeProcessClassName, resultSet);
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				Mockito.verify(
+					log, Mockito.times(2)
+				).info(
+					StringBundler.concat(
+						upgradeProcessClassName,
+						" is still executing. Processed ", currentRow, " rows.")
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testRegistryUpdatedBeforeInterval() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", Long.MAX_VALUE)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int currentRow = RandomTestUtil.randomInt();
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet resultSet = _mockResultSet(currentRow);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					upgradeProcessClassName, resultSet);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				Map<String, Integer> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertEquals(
+					Integer.valueOf(currentRow),
+					lastKnownProgresses.get(upgradeProcessClassName));
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testStartClearsRegistry() throws Exception {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", false)) {
+
+			Map<String, Integer> lastKnownProgresses =
+				UpgradeLogProgressTracker.getLastKnownProgresses();
+
+			lastKnownProgresses.put(
+				"com.liferay.test.StaleUpgradeProcess",
+				RandomTestUtil.randomInt());
+
+			Assert.assertFalse(lastKnownProgresses.isEmpty());
+
+			UpgradeLogProgressTracker.start();
+
+			Assert.assertTrue(lastKnownProgresses.isEmpty());
 		}
 	}
 
@@ -100,40 +516,46 @@ public class UpgradeLogProgressTrackerTest {
 
 				Assert.assertNotSame(connection, wrappedConnection);
 
-				Statement rawStatement = Mockito.mock(Statement.class);
+				Statement statement = Mockito.mock(Statement.class);
 
 				Mockito.when(
 					connection.createStatement()
 				).thenReturn(
-					rawStatement
+					statement
 				);
 
-				Statement statement = wrappedConnection.createStatement();
+				Statement wrappedStatement =
+					wrappedConnection.createStatement();
 
-				Assert.assertSame(wrappedConnection, statement.getConnection());
+				Assert.assertSame(
+					wrappedConnection, wrappedStatement.getConnection());
 
-				Assert.assertTrue(ProxyUtil.isProxyClass(statement.getClass()));
+				Assert.assertTrue(
+					ProxyUtil.isProxyClass(wrappedStatement.getClass()));
 
 				Mockito.verify(
-					rawStatement, Mockito.never()
+					statement, Mockito.never()
 				).getConnection();
 
-				ResultSet rawResultSet = Mockito.mock(ResultSet.class);
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
 
 				Mockito.when(
-					statement.executeQuery(Mockito.anyString())
+					wrappedStatement.executeQuery(Mockito.anyString())
 				).thenReturn(
-					rawResultSet
+					resultSet
 				);
 
-				ResultSet resultSet = statement.executeQuery("select 1");
+				ResultSet wrappedResultSet = wrappedStatement.executeQuery(
+					"select 1");
 
-				Assert.assertSame(statement, resultSet.getStatement());
+				Assert.assertSame(
+					wrappedStatement, wrappedResultSet.getStatement());
 
-				Assert.assertTrue(ProxyUtil.isProxyClass(resultSet.getClass()));
+				Assert.assertTrue(
+					ProxyUtil.isProxyClass(wrappedResultSet.getClass()));
 
 				Mockito.verify(
-					rawResultSet, Mockito.never()
+					resultSet, Mockito.never()
 				).getStatement();
 
 				Mockito.when(
@@ -187,5 +609,67 @@ public class UpgradeLogProgressTrackerTest {
 			}
 		}
 	}
+
+	private Log _getLog() {
+		Log log = Mockito.mock(Log.class);
+
+		Mockito.when(
+			log.isInfoEnabled()
+		).thenReturn(
+			true
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			UpgradeLogProgressTracker.class, "_log", log);
+
+		return log;
+	}
+
+	private ResultSet _mockResultSet(int currentRow) throws Exception {
+		ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+		Mockito.when(
+			resultSet.next()
+		).thenReturn(
+			true
+		);
+
+		Mockito.when(
+			resultSet.getRow()
+		).thenReturn(
+			currentRow
+		);
+
+		return resultSet;
+	}
+
+	private ResultSet _wrapResultSet(
+			String upgradeProcessClassName, ResultSet resultSet)
+		throws Exception {
+
+		Connection connection = Mockito.mock(Connection.class);
+		Statement statement = Mockito.mock(Statement.class);
+
+		Mockito.when(
+			connection.createStatement()
+		).thenReturn(
+			statement
+		);
+
+		Mockito.when(
+			statement.executeQuery(Mockito.anyString())
+		).thenReturn(
+			resultSet
+		);
+
+		Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
+			connection, upgradeProcessClassName);
+
+		Statement wrappedStatement = wrappedConnection.createStatement();
+
+		return wrappedStatement.executeQuery("select 1");
+	}
+
+	private Log _originalLog;
 
 }
