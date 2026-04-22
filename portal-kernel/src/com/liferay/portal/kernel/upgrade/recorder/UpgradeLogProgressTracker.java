@@ -294,9 +294,7 @@ public class UpgradeLogProgressTracker {
 				_lastKnownProgresses.remove(_registryKey);
 
 				if (_log.isInfoEnabled()) {
-					_log.info(
-						StringBundler.concat(
-							_upgradeProcessClassName, " finished."));
+					_log.info(_upgradeProcessClassName + " finished.");
 				}
 			}
 
