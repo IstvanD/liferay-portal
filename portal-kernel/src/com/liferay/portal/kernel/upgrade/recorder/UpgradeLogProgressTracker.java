@@ -277,8 +277,6 @@ public class UpgradeLogProgressTracker {
 
 					_lastKnownProgresses.put(_registryKey, currentRow);
 
-					_loggedProgress = true;
-
 					if (_log.isInfoEnabled()) {
 						_log.info(
 							StringBundler.concat(
@@ -290,11 +288,11 @@ public class UpgradeLogProgressTracker {
 					_lastLogTime = now;
 				}
 			}
-			else if (Objects.equals(methodName, "close") && _loggedProgress) {
-				_lastKnownProgresses.remove(_registryKey);
-
-				if (_log.isInfoEnabled()) {
-					_log.info(_upgradeProcessClassName + " finished.");
+			else if (Objects.equals(methodName, "close")) {
+				if (_lastKnownProgresses.remove(_registryKey) != null) {
+					if (_log.isInfoEnabled()) {
+						_log.info(_upgradeProcessClassName + " finished.");
+					}
 				}
 			}
 
@@ -325,7 +323,6 @@ public class UpgradeLogProgressTracker {
 		}
 
 		private long _lastLogTime;
-		private boolean _loggedProgress;
 		private final String _registryKey;
 		private final ResultSet _resultSet;
 		private final Statement _statementProxy;

@@ -90,6 +90,63 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
+	public void testCloseIsIdempotent() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int currentRow = RandomTestUtil.randomInt();
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet resultSet = _mockResultSet(currentRow);
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					upgradeProcessClassName, resultSet);
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
+				Map<String, Integer> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertEquals(
+					Integer.valueOf(currentRow),
+					lastKnownProgresses.get(registryKey));
+
+				wrappedResultSet.close();
+				wrappedResultSet.close();
+
+				Assert.assertNull(lastKnownProgresses.get(registryKey));
+
+				Mockito.verify(
+					log, Mockito.times(1)
+				).info(
+					upgradeProcessClassName + " finished."
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
 	public void testDelegationSafety() throws Exception {
 		Log log = _getLog();
 
