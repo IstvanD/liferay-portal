@@ -7,7 +7,6 @@ package com.liferay.portal.kernel.upgrade.recorder;
 
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
@@ -134,52 +133,6 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
-	public void testLogFallsBackToQueryWhenClassNameBlank() throws Exception {
-		Log log = _getLog();
-
-		try (SafeCloseable enabledSafeCloseable =
-				PropsValuesTestUtil.swapWithSafeCloseable(
-					"UPGRADE_LOG_PROGRESS_ENABLED", true);
-			SafeCloseable intervalSafeCloseable =
-				PropsValuesTestUtil.swapWithSafeCloseable(
-					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
-
-			UpgradeLogProgressTracker.start();
-
-			try {
-				int currentRow = RandomTestUtil.randomInt();
-
-				ResultSet resultSet = _mockResultSet(currentRow);
-
-				ResultSet wrappedResultSet = _wrapResultSet(
-					StringPool.BLANK, resultSet);
-
-				ReflectionTestUtil.setFieldValue(
-					ProxyUtil.getInvocationHandler(wrappedResultSet),
-					"_lastLogTime", 0L);
-
-				Assert.assertTrue(wrappedResultSet.next());
-
-				Mockito.verify(
-					log
-				).info(
-					StringBundler.concat(
-						"Query is still executing. Processed ", currentRow,
-						" rows.")
-				);
-
-				Map<String, Integer> lastKnownProgresses =
-					UpgradeLogProgressTracker.getLastKnownProgresses();
-
-				Assert.assertTrue(lastKnownProgresses.isEmpty());
-			}
-			finally {
-				UpgradeLogProgressTracker.stop();
-			}
-		}
-	}
-
-	@Test
 	public void testNextDoesNotLogBeforeInterval() throws Exception {
 		Log log = _getLog();
 
@@ -195,10 +148,10 @@ public class UpgradeLogProgressTrackerTest {
 			try {
 				int currentRow = RandomTestUtil.randomInt();
 
+				ResultSet resultSet = _mockResultSet(currentRow);
+
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
-
-				ResultSet resultSet = _mockResultSet(currentRow);
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -231,9 +184,6 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
-
 				ResultSet resultSet = Mockito.mock(ResultSet.class);
 
 				Mockito.when(
@@ -241,6 +191,9 @@ public class UpgradeLogProgressTrackerTest {
 				).thenReturn(
 					false
 				);
+
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -260,8 +213,7 @@ public class UpgradeLogProgressTrackerTest {
 				Map<String, Integer> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
-				Assert.assertFalse(
-					lastKnownProgresses.containsKey(upgradeProcessClassName));
+				Assert.assertTrue(lastKnownProgresses.isEmpty());
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();
@@ -290,10 +242,10 @@ public class UpgradeLogProgressTrackerTest {
 
 					int currentRow = RandomTestUtil.randomInt();
 
+					ResultSet resultSet = _mockResultSet(currentRow);
+
 					String upgradeProcessClassName =
 						"com.liferay.test.SampleUpgradeProcess";
-
-					ResultSet resultSet = _mockResultSet(currentRow);
 
 					ResultSet wrappedResultSet = _wrapResultSet(
 						upgradeProcessClassName, resultSet);
@@ -365,9 +317,13 @@ public class UpgradeLogProgressTrackerTest {
 				Map<String, Integer> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
 				Assert.assertEquals(
 					Integer.valueOf(currentRow),
-					lastKnownProgresses.get(upgradeProcessClassName));
+					lastKnownProgresses.get(registryKey));
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();
@@ -425,49 +381,14 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
-	public void testRegistryUpdatedBeforeInterval() throws Exception {
-		try (SafeCloseable enabledSafeCloseable =
-				PropsValuesTestUtil.swapWithSafeCloseable(
-					"UPGRADE_LOG_PROGRESS_ENABLED", true);
-			SafeCloseable intervalSafeCloseable =
-				PropsValuesTestUtil.swapWithSafeCloseable(
-					"UPGRADE_LOG_PROGRESS_INTERVAL", Long.MAX_VALUE)) {
-
-			UpgradeLogProgressTracker.start();
-
-			try {
-				int currentRow = RandomTestUtil.randomInt();
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
-
-				ResultSet resultSet = _mockResultSet(currentRow);
-
-				ResultSet wrappedResultSet = _wrapResultSet(
-					upgradeProcessClassName, resultSet);
-
-				Assert.assertTrue(wrappedResultSet.next());
-
-				Map<String, Integer> lastKnownProgresses =
-					UpgradeLogProgressTracker.getLastKnownProgresses();
-
-				Assert.assertEquals(
-					Integer.valueOf(currentRow),
-					lastKnownProgresses.get(upgradeProcessClassName));
-			}
-			finally {
-				UpgradeLogProgressTracker.stop();
-			}
-		}
-	}
-
-	@Test
 	public void testStartClearsRegistry() throws Exception {
 		try (SafeCloseable safeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
 					"UPGRADE_LOG_PROGRESS_ENABLED", false)) {
 
 			Map<String, Integer> lastKnownProgresses =
-				UpgradeLogProgressTracker.getLastKnownProgresses();
+				ReflectionTestUtil.getFieldValue(
+					UpgradeLogProgressTracker.class, "_lastKnownProgresses");
 
 			lastKnownProgresses.put(
 				"com.liferay.test.StaleUpgradeProcess",
@@ -492,7 +413,7 @@ public class UpgradeLogProgressTrackerTest {
 			Connection connection = Mockito.mock(Connection.class);
 
 			Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
-				connection);
+				connection, "com.liferay.test.SampleUpgradeProcess");
 
 			Assert.assertSame(connection, wrappedConnection);
 
@@ -512,7 +433,7 @@ public class UpgradeLogProgressTrackerTest {
 				Connection connection = Mockito.mock(Connection.class);
 
 				Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
-					connection);
+					connection, "com.liferay.test.SampleUpgradeProcess");
 
 				Assert.assertNotSame(connection, wrappedConnection);
 

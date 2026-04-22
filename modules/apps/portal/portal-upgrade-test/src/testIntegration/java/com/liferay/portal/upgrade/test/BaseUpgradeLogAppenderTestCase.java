@@ -517,7 +517,8 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 	@Test
 	public void testLastKnownProgressesInDiagnosticsReport() throws Exception {
 		Map<String, Integer> lastKnownProgresses =
-			UpgradeLogProgressTracker.getLastKnownProgresses();
+			ReflectionTestUtil.getFieldValue(
+				UpgradeLogProgressTracker.class, "_lastKnownProgresses");
 
 		lastKnownProgresses.clear();
 

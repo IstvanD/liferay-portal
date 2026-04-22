@@ -10,9 +10,9 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.util.ConnectionWrapper;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyUtil;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -25,9 +25,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author István András Dézsi
@@ -35,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class UpgradeLogProgressTracker {
 
 	public static Map<String, Integer> getLastKnownProgresses() {
-		return _lastKnownProgresses;
+		return Collections.unmodifiableMap(_lastKnownProgresses);
 	}
 
 	public static void start() {
@@ -56,10 +58,6 @@ public class UpgradeLogProgressTracker {
 
 	public static void stop() {
 		_enabled = false;
-	}
-
-	public static Connection wrap(Connection connection) {
-		return wrap(connection, StringPool.BLANK);
 	}
 
 	public static Connection wrap(
@@ -241,6 +239,7 @@ public class UpgradeLogProgressTracker {
 		UpgradeLogProgressTracker.class);
 
 	private static volatile boolean _enabled;
+	private static final AtomicLong _handlerCounter = new AtomicLong();
 	private static final Map<String, Integer> _lastKnownProgresses =
 		new ConcurrentHashMap<>();
 
@@ -251,7 +250,9 @@ public class UpgradeLogProgressTracker {
 		public Object invoke(Object proxy, Method method, Object[] args)
 			throws Throwable {
 
-			if (Objects.equals(method.getName(), "getStatement")) {
+			String methodName = method.getName();
+
+			if (Objects.equals(methodName, "getStatement")) {
 				return _statementProxy;
 			}
 
@@ -264,35 +265,38 @@ public class UpgradeLogProgressTracker {
 				throw invocationTargetException.getTargetException();
 			}
 
-			if (Objects.equals(method.getName(), "next") &&
+			if (Objects.equals(methodName, "next") &&
 				Objects.equals(result, Boolean.TRUE)) {
-
-				int currentRow = _resultSet.getRow();
-
-				if (!Validator.isBlank(_upgradeProcessClassName)) {
-					_lastKnownProgresses.put(
-						_upgradeProcessClassName, currentRow);
-				}
 
 				long now = System.currentTimeMillis();
 
 				if ((now - _lastLogTime) >
 						PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL) {
 
+					int currentRow = _resultSet.getRow();
+
+					_lastKnownProgresses.put(_registryKey, currentRow);
+
+					_loggedProgress = true;
+
 					if (_log.isInfoEnabled()) {
-						String subject = _upgradeProcessClassName;
-
-						if (Validator.isBlank(subject)) {
-							subject = "Query";
-						}
-
 						_log.info(
 							StringBundler.concat(
-								subject, " is still executing. Processed ",
-								currentRow, " rows."));
+								_upgradeProcessClassName,
+								" is still executing. Processed ", currentRow,
+								" rows."));
 					}
 
 					_lastLogTime = now;
+				}
+			}
+			else if (Objects.equals(methodName, "close") && _loggedProgress) {
+				_lastKnownProgresses.remove(_registryKey);
+
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						StringBundler.concat(
+							_upgradeProcessClassName, " finished."));
 				}
 			}
 
@@ -307,10 +311,24 @@ public class UpgradeLogProgressTracker {
 			_statementProxy = statementProxy;
 			_upgradeProcessClassName = upgradeProcessClassName;
 
+			String registryKey = upgradeProcessClassName;
+
+			if (PropsValues.DATABASE_PARTITION_ENABLED) {
+				registryKey = StringBundler.concat(
+					registryKey, StringPool.AT,
+					CompanyThreadLocal.getCompanyId());
+			}
+
+			_registryKey = StringBundler.concat(
+				registryKey, StringPool.POUND,
+				_handlerCounter.incrementAndGet());
+
 			_lastLogTime = System.currentTimeMillis();
 		}
 
 		private long _lastLogTime;
+		private boolean _loggedProgress;
+		private final String _registryKey;
 		private final ResultSet _resultSet;
 		private final Statement _statementProxy;
 		private final String _upgradeProcessClassName;
