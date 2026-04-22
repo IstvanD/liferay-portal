@@ -148,6 +148,42 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
+	public void testCloseWithoutProgressDoesNotLog() throws Exception {
+		Log log = _getLog();
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", Long.MAX_VALUE)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				ResultSet resultSet = _mockResultSet(
+					RandomTestUtil.randomInt());
+
+				ResultSet wrappedResultSet = _wrapResultSet(
+					"com.liferay.test.SampleUpgradeProcess", resultSet);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				wrappedResultSet.close();
+
+				Mockito.verify(
+					log, Mockito.never()
+				).info(
+					Mockito.anyString()
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
 	public void testDelegationSafety() throws Exception {
 		Log log = _getLog();
 
@@ -183,6 +219,109 @@ public class UpgradeLogProgressTrackerTest {
 				).info(
 					Mockito.anyString()
 				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testNestedResultSets() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int innerRow = RandomTestUtil.randomInt();
+				int outerRow = RandomTestUtil.randomInt();
+
+				String upgradeProcessClassName =
+					"com.liferay.test.SampleUpgradeProcess";
+
+				ResultSet innerResultSet = _mockResultSet(innerRow);
+				ResultSet outerResultSet = _mockResultSet(outerRow);
+
+				Connection connection = Mockito.mock(Connection.class);
+				Statement innerStatement = Mockito.mock(Statement.class);
+				Statement outerStatement = Mockito.mock(Statement.class);
+
+				Mockito.when(
+					connection.createStatement()
+				).thenReturn(
+					outerStatement, innerStatement
+				);
+
+				Mockito.when(
+					outerStatement.executeQuery(Mockito.anyString())
+				).thenReturn(
+					outerResultSet
+				);
+
+				Mockito.when(
+					innerStatement.executeQuery(Mockito.anyString())
+				).thenReturn(
+					innerResultSet
+				);
+
+				Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
+					connection, upgradeProcessClassName);
+
+				ResultSet wrappedOuterResultSet =
+					wrappedConnection.createStatement(
+					).executeQuery(
+						"outer"
+					);
+				ResultSet wrappedInnerResultSet =
+					wrappedConnection.createStatement(
+					).executeQuery(
+						"inner"
+					);
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedOuterResultSet),
+					"_lastLogTime", 0L);
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedInnerResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedOuterResultSet.next());
+				Assert.assertTrue(wrappedInnerResultSet.next());
+
+				String innerRegistryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedInnerResultSet),
+					"_registryKey");
+				String outerRegistryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedOuterResultSet),
+					"_registryKey");
+
+				Assert.assertNotEquals(outerRegistryKey, innerRegistryKey);
+
+				Map<String, Integer> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertEquals(
+					Integer.valueOf(outerRow),
+					lastKnownProgresses.get(outerRegistryKey));
+				Assert.assertEquals(
+					Integer.valueOf(innerRow),
+					lastKnownProgresses.get(innerRegistryKey));
+
+				wrappedInnerResultSet.close();
+
+				Assert.assertNull(lastKnownProgresses.get(innerRegistryKey));
+				Assert.assertEquals(
+					Integer.valueOf(outerRow),
+					lastKnownProgresses.get(outerRegistryKey));
+
+				wrappedOuterResultSet.close();
+
+				Assert.assertNull(lastKnownProgresses.get(outerRegistryKey));
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();
