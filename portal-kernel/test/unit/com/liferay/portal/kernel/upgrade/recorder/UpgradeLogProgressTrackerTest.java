@@ -104,6 +104,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				int currentRow = RandomTestUtil.randomInt();
+
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
@@ -349,6 +350,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				int currentRow = RandomTestUtil.randomInt();
+
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
@@ -403,6 +405,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				int currentRow = RandomTestUtil.randomInt();
+
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
