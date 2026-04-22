@@ -138,7 +138,7 @@ public class UpgradeLogProgressTrackerTest {
 				Mockito.verify(
 					log, Mockito.times(1)
 				).info(
-					upgradeProcessClassName + " finished."
+					registryKey + " finished."
 				);
 			}
 			finally {
@@ -316,14 +316,17 @@ public class UpgradeLogProgressTrackerTest {
 
 					List<LogEntry> logEntries = logCapture.getLogEntries();
 
+					String registryKey = ReflectionTestUtil.getFieldValue(
+						ProxyUtil.getInvocationHandler(wrappedResultSet),
+						"_registryKey");
+
 					Assert.assertEquals(
 						logEntries.toString(), 1, logEntries.size());
 
 					Assert.assertEquals(
 						StringBundler.concat(
-							upgradeProcessClassName,
-							" is still executing. Processed ", currentRow,
-							" rows."),
+							registryKey, " is still executing. Processed ",
+							currentRow, " rows."),
 						logEntries.get(
 							0
 						).getMessage());
@@ -365,20 +368,20 @@ public class UpgradeLogProgressTrackerTest {
 
 				Assert.assertTrue(wrappedResultSet.next());
 
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
 				Mockito.verify(
 					log
 				).info(
 					StringBundler.concat(
-						upgradeProcessClassName,
-						" is still executing. Processed ", currentRow, " rows.")
+						registryKey, " is still executing. Processed ",
+						currentRow, " rows.")
 				);
 
 				Map<String, Integer> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
-
-				String registryKey = ReflectionTestUtil.getFieldValue(
-					ProxyUtil.getInvocationHandler(wrappedResultSet),
-					"_registryKey");
 
 				Assert.assertEquals(
 					Integer.valueOf(currentRow),
@@ -426,12 +429,16 @@ public class UpgradeLogProgressTrackerTest {
 
 				Assert.assertTrue(wrappedResultSet.next());
 
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
 				Mockito.verify(
 					log, Mockito.times(2)
 				).info(
 					StringBundler.concat(
-						upgradeProcessClassName,
-						" is still executing. Processed ", currentRow, " rows.")
+						registryKey, " is still executing. Processed ",
+						currentRow, " rows.")
 				);
 			}
 			finally {

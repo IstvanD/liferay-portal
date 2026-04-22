@@ -280,9 +280,8 @@ public class UpgradeLogProgressTracker {
 					if (_log.isInfoEnabled()) {
 						_log.info(
 							StringBundler.concat(
-								_upgradeProcessClassName,
-								" is still executing. Processed ", currentRow,
-								" rows."));
+								_registryKey, " is still executing. Processed ",
+								currentRow, " rows."));
 					}
 
 					_lastLogTime = now;
@@ -291,7 +290,7 @@ public class UpgradeLogProgressTracker {
 			else if (Objects.equals(methodName, "close")) {
 				if (_lastKnownProgresses.remove(_registryKey) != null) {
 					if (_log.isInfoEnabled()) {
-						_log.info(_upgradeProcessClassName + " finished.");
+						_log.info(_registryKey + " finished.");
 					}
 				}
 			}
@@ -305,7 +304,6 @@ public class UpgradeLogProgressTracker {
 
 			_resultSet = resultSet;
 			_statementProxy = statementProxy;
-			_upgradeProcessClassName = upgradeProcessClassName;
 
 			String registryKey = upgradeProcessClassName;
 
@@ -326,7 +324,6 @@ public class UpgradeLogProgressTracker {
 		private final String _registryKey;
 		private final ResultSet _resultSet;
 		private final Statement _statementProxy;
-		private final String _upgradeProcessClassName;
 
 	}
 
