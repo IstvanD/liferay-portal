@@ -579,6 +579,9 @@ public class UpgradeReport {
 		).put(
 			"failed.sqls", UpgradeSQLRecorder.getFailedSQLs()
 		).put(
+			"warnings",
+			_getMessagesPrinters(true, upgradeRecorder.getWarningMessages())
+		).put(
 			"last.known.progresses",
 			TransformUtil.transform(
 				UpgradeLogProgressTracker.getLastKnownProgresses(
@@ -586,9 +589,6 @@ public class UpgradeReport {
 				entry -> StringBundler.concat(
 					entry.getKey(), " processed approximately ",
 					entry.getValue(), " rows"))
-		).put(
-			"warnings",
-			_getMessagesPrinters(true, upgradeRecorder.getWarningMessages())
 		).put(
 			"longest.upgrade.processes",
 			() -> {

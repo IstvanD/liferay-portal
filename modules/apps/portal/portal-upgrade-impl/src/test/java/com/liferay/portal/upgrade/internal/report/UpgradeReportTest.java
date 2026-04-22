@@ -206,7 +206,7 @@ public class UpgradeReportTest {
 
 		List<String> expectedKeys = List.of(
 			"execution.date", "execution.time", "errors", "failed.sqls",
-			"last.known.progresses", "warnings", "longest.upgrade.processes",
+			"warnings", "last.known.progresses", "longest.upgrade.processes",
 			"longest.running.sqls", "data.clean.up");
 
 		Assert.assertEquals(expectedKeys, actualKeys);
