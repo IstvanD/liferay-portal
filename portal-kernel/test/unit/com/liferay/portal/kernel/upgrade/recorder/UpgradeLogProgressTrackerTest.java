@@ -116,12 +116,12 @@ public class UpgradeLogProgressTrackerTest {
 
 				Assert.assertTrue(wrappedResultSet.next());
 
+				Map<String, Long> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
 				String registryKey = ReflectionTestUtil.getFieldValue(
 					ProxyUtil.getInvocationHandler(wrappedResultSet),
 					"_registryKey");
-
-				Map<String, Long> lastKnownProgresses =
-					UpgradeLogProgressTracker.getLastKnownProgresses();
 
 				Assert.assertEquals(
 					Long.valueOf(1L),
