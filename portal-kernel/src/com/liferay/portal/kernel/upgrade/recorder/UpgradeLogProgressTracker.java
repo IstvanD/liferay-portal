@@ -272,8 +272,8 @@ public class UpgradeLogProgressTracker {
 
 				long now = System.currentTimeMillis();
 
-				if ((now - _lastLogTime) >
-						PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL) {
+				if ((now - _lastLogTime) > Math.max(
+						1000L, PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL)) {
 
 					_lastKnownProgresses.put(_registryKey, _rowCount);
 

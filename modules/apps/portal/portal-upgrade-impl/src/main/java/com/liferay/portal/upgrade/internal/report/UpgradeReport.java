@@ -583,12 +583,20 @@ public class UpgradeReport {
 			_getMessagesPrinters(true, upgradeRecorder.getWarningMessages())
 		).put(
 			"last.known.progresses",
-			TransformUtil.transform(
-				UpgradeLogProgressTracker.getLastKnownProgresses(
-				).entrySet(),
-				entry -> StringBundler.concat(
-					entry.getKey(), " processed approximately ",
-					entry.getValue(), " rows"))
+			() -> {
+				Map<String, Long> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				if (lastKnownProgresses.isEmpty()) {
+					return null;
+				}
+
+				return TransformUtil.transform(
+					lastKnownProgresses.entrySet(),
+					entry -> StringBundler.concat(
+						entry.getKey(), " processed approximately ",
+						entry.getValue(), " rows"));
+			}
 		).put(
 			"longest.upgrade.processes",
 			() -> {
