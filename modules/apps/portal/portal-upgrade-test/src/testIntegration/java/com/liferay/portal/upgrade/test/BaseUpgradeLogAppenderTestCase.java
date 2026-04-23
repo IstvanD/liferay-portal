@@ -516,7 +516,7 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 
 	@Test
 	public void testLastKnownProgressesInDiagnosticsReport() throws Exception {
-		Map<String, Integer> lastKnownProgresses =
+		Map<String, Long> lastKnownProgresses =
 			ReflectionTestUtil.getFieldValue(
 				UpgradeLogProgressTracker.class, "_lastKnownProgresses");
 
@@ -525,7 +525,7 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 		_appender.start();
 
 		try {
-			int currentRow = RandomTestUtil.randomInt();
+			long currentRow = RandomTestUtil.randomLong();
 
 			String upgradeProcessClassName =
 				"com.liferay.test.SampleUpgradeProcess";

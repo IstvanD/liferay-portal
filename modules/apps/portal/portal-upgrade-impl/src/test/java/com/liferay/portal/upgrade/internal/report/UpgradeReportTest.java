@@ -321,7 +321,7 @@ public class UpgradeReportTest {
 			Mockito.mock(Connection.class)
 		);
 
-		int currentRow = RandomTestUtil.randomInt();
+		long currentRow = RandomTestUtil.randomLong();
 
 		String upgradeProcessClassName =
 			"com.liferay.test.SampleUpgradeProcess";

@@ -6,7 +6,6 @@
 package com.liferay.portal.kernel.upgrade.recorder;
 
 import com.liferay.petra.lang.SafeCloseable;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
@@ -103,12 +102,10 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				int currentRow = RandomTestUtil.randomInt();
-
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
-				ResultSet resultSet = _mockResultSet(currentRow);
+				ResultSet resultSet = _mockResultSet();
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -123,11 +120,11 @@ public class UpgradeLogProgressTrackerTest {
 					ProxyUtil.getInvocationHandler(wrappedResultSet),
 					"_registryKey");
 
-				Map<String, Integer> lastKnownProgresses =
+				Map<String, Long> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
 				Assert.assertEquals(
-					Integer.valueOf(currentRow),
+					Long.valueOf(1L),
 					lastKnownProgresses.get(registryKey));
 
 				wrappedResultSet.close();
@@ -161,8 +158,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				ResultSet resultSet = _mockResultSet(
-					RandomTestUtil.randomInt());
+				ResultSet resultSet = _mockResultSet();
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					"com.liferay.test.SampleUpgradeProcess", resultSet);
@@ -238,14 +234,11 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				int innerRow = RandomTestUtil.randomInt();
-				int outerRow = RandomTestUtil.randomInt();
-
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
-				ResultSet innerResultSet = _mockResultSet(innerRow);
-				ResultSet outerResultSet = _mockResultSet(outerRow);
+				ResultSet innerResultSet = _mockResultSet();
+				ResultSet outerResultSet = _mockResultSet();
 
 				Connection connection = Mockito.mock(Connection.class);
 				Statement innerStatement = Mockito.mock(Statement.class);
@@ -302,21 +295,21 @@ public class UpgradeLogProgressTrackerTest {
 
 				Assert.assertNotEquals(outerRegistryKey, innerRegistryKey);
 
-				Map<String, Integer> lastKnownProgresses =
+				Map<String, Long> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
 				Assert.assertEquals(
-					Integer.valueOf(outerRow),
+					Long.valueOf(1L),
 					lastKnownProgresses.get(outerRegistryKey));
 				Assert.assertEquals(
-					Integer.valueOf(innerRow),
+					Long.valueOf(1L),
 					lastKnownProgresses.get(innerRegistryKey));
 
 				wrappedInnerResultSet.close();
 
 				Assert.assertNull(lastKnownProgresses.get(innerRegistryKey));
 				Assert.assertEquals(
-					Integer.valueOf(outerRow),
+					Long.valueOf(1L),
 					lastKnownProgresses.get(outerRegistryKey));
 
 				wrappedOuterResultSet.close();
@@ -343,9 +336,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				int currentRow = RandomTestUtil.randomInt();
-
-				ResultSet resultSet = _mockResultSet(currentRow);
+				ResultSet resultSet = _mockResultSet();
 
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
@@ -407,7 +398,7 @@ public class UpgradeLogProgressTrackerTest {
 					Mockito.anyString()
 				);
 
-				Map<String, Integer> lastKnownProgresses =
+				Map<String, Long> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
 				Assert.assertTrue(lastKnownProgresses.isEmpty());
@@ -437,9 +428,7 @@ public class UpgradeLogProgressTrackerTest {
 
 					logCapture.resetPriority(LoggerTestUtil.INFO);
 
-					int currentRow = RandomTestUtil.randomInt();
-
-					ResultSet resultSet = _mockResultSet(currentRow);
+					ResultSet resultSet = _mockResultSet();
 
 					String upgradeProcessClassName =
 						"com.liferay.test.SampleUpgradeProcess";
@@ -463,9 +452,7 @@ public class UpgradeLogProgressTrackerTest {
 						logEntries.toString(), 1, logEntries.size());
 
 					Assert.assertEquals(
-						StringBundler.concat(
-							registryKey, " is still executing. Processed ",
-							currentRow, " rows."),
+						registryKey + " is still executing. Processed 1 rows.",
 						logEntries.get(
 							0
 						).getMessage());
@@ -491,12 +478,10 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				int currentRow = RandomTestUtil.randomInt();
-
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
-				ResultSet resultSet = _mockResultSet(currentRow);
+				ResultSet resultSet = _mockResultSet();
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -514,16 +499,14 @@ public class UpgradeLogProgressTrackerTest {
 				Mockito.verify(
 					log
 				).info(
-					StringBundler.concat(
-						registryKey, " is still executing. Processed ",
-						currentRow, " rows.")
+					registryKey + " is still executing. Processed 1 rows."
 				);
 
-				Map<String, Integer> lastKnownProgresses =
+				Map<String, Long> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
 				Assert.assertEquals(
-					Integer.valueOf(currentRow),
+					Long.valueOf(1L),
 					lastKnownProgresses.get(registryKey));
 			}
 			finally {
@@ -546,12 +529,10 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				int currentRow = RandomTestUtil.randomInt();
-
 				String upgradeProcessClassName =
 					"com.liferay.test.SampleUpgradeProcess";
 
-				ResultSet resultSet = _mockResultSet(currentRow);
+				ResultSet resultSet = _mockResultSet();
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -573,11 +554,14 @@ public class UpgradeLogProgressTrackerTest {
 					"_registryKey");
 
 				Mockito.verify(
-					log, Mockito.times(2)
+					log
 				).info(
-					StringBundler.concat(
-						registryKey, " is still executing. Processed ",
-						currentRow, " rows.")
+					registryKey + " is still executing. Processed 1 rows."
+				);
+				Mockito.verify(
+					log
+				).info(
+					registryKey + " is still executing. Processed 2 rows."
 				);
 			}
 			finally {
@@ -592,19 +576,50 @@ public class UpgradeLogProgressTrackerTest {
 				PropsValuesTestUtil.swapWithSafeCloseable(
 					"UPGRADE_LOG_PROGRESS_ENABLED", false)) {
 
-			Map<String, Integer> lastKnownProgresses =
+			Map<String, Long> lastKnownProgresses =
 				ReflectionTestUtil.getFieldValue(
 					UpgradeLogProgressTracker.class, "_lastKnownProgresses");
 
 			lastKnownProgresses.put(
 				"com.liferay.test.StaleUpgradeProcess",
-				RandomTestUtil.randomInt());
+				RandomTestUtil.randomLong());
 
 			Assert.assertFalse(lastKnownProgresses.isEmpty());
 
 			UpgradeLogProgressTracker.start();
 
 			Assert.assertTrue(lastKnownProgresses.isEmpty());
+		}
+	}
+
+	@Test
+	public void testStartWarnsWhenEnabled() throws Exception {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				UpgradeLogProgressTracker.class.getName(),
+				LoggerTestUtil.WARN)) {
+
+			try {
+				UpgradeLogProgressTracker.start();
+
+				List<LogEntry> logEntries = logCapture.getLogEntries();
+
+				Assert.assertEquals(
+					logEntries.toString(), 1, logEntries.size());
+
+				LogEntry logEntry = logEntries.get(0);
+
+				Assert.assertEquals("WARN", logEntry.getPriority());
+				Assert.assertEquals(
+					"Granular progress logging for upgrades is enabled. This " +
+						"may decrease performance.",
+					logEntry.getMessage());
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
 		}
 	}
 
@@ -752,19 +767,13 @@ public class UpgradeLogProgressTrackerTest {
 		return log;
 	}
 
-	private ResultSet _mockResultSet(int currentRow) throws Exception {
+	private ResultSet _mockResultSet() throws Exception {
 		ResultSet resultSet = Mockito.mock(ResultSet.class);
 
 		Mockito.when(
 			resultSet.next()
 		).thenReturn(
 			true
-		);
-
-		Mockito.when(
-			resultSet.getRow()
-		).thenReturn(
-			currentRow
 		);
 
 		return resultSet;

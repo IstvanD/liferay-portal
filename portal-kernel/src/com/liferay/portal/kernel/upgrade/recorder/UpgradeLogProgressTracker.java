@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class UpgradeLogProgressTracker {
 
-	public static Map<String, Integer> getLastKnownProgresses() {
+	public static Map<String, Long> getLastKnownProgresses() {
 		return Collections.unmodifiableMap(_lastKnownProgresses);
 	}
 
@@ -240,7 +240,7 @@ public class UpgradeLogProgressTracker {
 
 	private static volatile boolean _enabled;
 	private static final AtomicLong _handlerCounter = new AtomicLong();
-	private static final Map<String, Integer> _lastKnownProgresses =
+	private static final Map<String, Long> _lastKnownProgresses =
 		new ConcurrentHashMap<>();
 
 	private static class ResultSetInvocationHandler
@@ -268,20 +268,20 @@ public class UpgradeLogProgressTracker {
 			if (Objects.equals(methodName, "next") &&
 				Objects.equals(result, Boolean.TRUE)) {
 
+				_rowCount++;
+
 				long now = System.currentTimeMillis();
 
 				if ((now - _lastLogTime) >
 						PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL) {
 
-					int currentRow = _resultSet.getRow();
-
-					_lastKnownProgresses.put(_registryKey, currentRow);
+					_lastKnownProgresses.put(_registryKey, _rowCount);
 
 					if (_log.isInfoEnabled()) {
 						_log.info(
 							StringBundler.concat(
 								_registryKey, " is still executing. Processed ",
-								currentRow, " rows."));
+								_rowCount, " rows."));
 					}
 
 					_lastLogTime = now;
@@ -323,6 +323,7 @@ public class UpgradeLogProgressTracker {
 		private long _lastLogTime;
 		private final String _registryKey;
 		private final ResultSet _resultSet;
+		private long _rowCount;
 		private final Statement _statementProxy;
 
 	}
