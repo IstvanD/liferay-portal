@@ -6,7 +6,6 @@
 package com.liferay.portal.kernel.upgrade.recorder;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.util.ConnectionWrapper;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -272,8 +271,8 @@ public class UpgradeLogProgressTracker {
 
 				long now = System.currentTimeMillis();
 
-				if ((now - _lastLogTime) > Math.max(
-						1000L, PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL)) {
+				if ((now - _lastLogTime) >
+						PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL) {
 
 					_lastKnownProgresses.put(_registryKey, _rowCount);
 
@@ -305,17 +304,18 @@ public class UpgradeLogProgressTracker {
 			_resultSet = resultSet;
 			_statementProxy = statementProxy;
 
-			String registryKey = upgradeProcessClassName;
+			long handlerId = _handlerCounter.incrementAndGet();
 
 			if (PropsValues.DATABASE_PARTITION_ENABLED) {
-				registryKey = StringBundler.concat(
-					registryKey, StringPool.AT,
-					CompanyThreadLocal.getCompanyId());
+				_registryKey = StringBundler.concat(
+					upgradeProcessClassName, " (company=",
+					CompanyThreadLocal.getCompanyId(), ", query=", handlerId,
+					")");
 			}
-
-			_registryKey = StringBundler.concat(
-				registryKey, StringPool.POUND,
-				_handlerCounter.incrementAndGet());
+			else {
+				_registryKey = StringBundler.concat(
+					upgradeProcessClassName, " (query=", handlerId, ")");
+			}
 
 			_lastLogTime = System.currentTimeMillis();
 		}
