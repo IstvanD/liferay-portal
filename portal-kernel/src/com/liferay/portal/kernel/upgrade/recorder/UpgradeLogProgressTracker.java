@@ -308,13 +308,13 @@ public class UpgradeLogProgressTracker {
 
 			if (PropsValues.DATABASE_PARTITION_ENABLED) {
 				_registryKey = StringBundler.concat(
-					upgradeProcessClassName, " (company=",
-					CompanyThreadLocal.getCompanyId(), ", query=", handlerId,
-					")");
+					upgradeProcessClassName, " {companyId=",
+					CompanyThreadLocal.getCompanyId(), ", handlerId=",
+					handlerId, "}");
 			}
 			else {
 				_registryKey = StringBundler.concat(
-					upgradeProcessClassName, " (query=", handlerId, ")");
+					upgradeProcessClassName, " {handlerId=", handlerId, "}");
 			}
 
 			_lastLogTime = System.currentTimeMillis();
