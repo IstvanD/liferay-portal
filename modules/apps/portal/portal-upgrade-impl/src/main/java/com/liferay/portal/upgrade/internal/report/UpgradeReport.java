@@ -629,11 +629,24 @@ public class UpgradeReport {
 					return null;
 				}
 
+				Map<String, Long> lastKnownTotalCounts =
+					UpgradeLogProgressTracker.getLastKnownTotalCounts();
+
 				return TransformUtil.transform(
 					lastKnownProgresses.entrySet(),
-					entry -> StringBundler.concat(
-						entry.getKey(), " processed approximately ",
-						entry.getValue(), " rows"));
+					entry -> {
+						Long total = lastKnownTotalCounts.get(entry.getKey());
+
+						if ((total != null) && (total > 0)) {
+							return StringBundler.concat(
+								entry.getKey(), " processed approximately ",
+								entry.getValue(), " of ", total, " rows");
+						}
+
+						return StringBundler.concat(
+							entry.getKey(), " processed approximately ",
+							entry.getValue(), " rows");
+					});
 			}
 		).put(
 			"longest.upgrade.processes",
