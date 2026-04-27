@@ -12,9 +12,13 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 import java.lang.reflect.Method;
 
@@ -22,16 +26,26 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -84,6 +98,124 @@ public class UpgradeLogProgressTrackerTest {
 				upgradeLogProgressTrackerMockedStatic.verify(
 					() -> UpgradeLogProgressTracker.wrap(
 						Mockito.any(Connection.class), Mockito.anyString()));
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testBuildCountSQLForSelect() throws Exception {
+		Assert.assertEquals(
+			"SELECT COUNT(1) FROM (select * from Foo) tempCountTable_",
+			_invokeBuildCountSQL("select * from Foo"));
+	}
+
+	@Test
+	public void testBuildCountSQLSkipsCallStatementSQL() throws Exception {
+		Assert.assertNull(_invokeBuildCountSQL("call foo()"));
+	}
+
+	@Test
+	public void testBuildCountSQLSkipsNonselect() throws Exception {
+		Assert.assertNull(_invokeBuildCountSQL("update Foo set x = 1"));
+		Assert.assertNull(
+			_invokeBuildCountSQL("insert into Foo (x) values (1)"));
+		Assert.assertNull(_invokeBuildCountSQL("delete from Foo"));
+		Assert.assertNull(_invokeBuildCountSQL("create table Foo (x int)"));
+	}
+
+	@Test
+	public void testBuildCountSQLSkipsSelectivityIdentifier() throws Exception {
+		Assert.assertNull(_invokeBuildCountSQL("selectivity_score"));
+	}
+
+	@Test
+	public void testBuildCountSQLStripsTopLevelOrderBy() throws Exception {
+		String result = _invokeBuildCountSQL("select * from Foo order by id");
+
+		Assert.assertNotNull(result);
+
+		String lowerResult = StringUtil.toLowerCase(result);
+
+		Assert.assertFalse(lowerResult, lowerResult.contains("order by id"));
+
+		Assert.assertTrue(result.contains("tempCountTable_"));
+	}
+
+	@Test
+	public void testBuildCountSQLStripsTrailingSemicolon() throws Exception {
+		String result = _invokeBuildCountSQL("select * from Foo order by id;");
+
+		Assert.assertNotNull(result);
+		Assert.assertFalse(result, result.contains("order by id;"));
+		Assert.assertFalse(result, result.contains(";) tempCountTable_"));
+	}
+
+	@Test
+	public void testClearParametersResetsUnsafeFlag() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo where x = ?");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				ResultSet countResultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					countMockPreparedStatement.executeQuery()
+				).thenReturn(
+					countResultSet
+				);
+
+				Mockito.when(
+					countResultSet.next()
+				).thenReturn(
+					true
+				);
+
+				Mockito.when(
+					countResultSet.getLong(1)
+				).thenReturn(
+					RandomTestUtil.randomLong()
+				);
+
+				wrappedPreparedStatement.setBinaryStream(
+					1, new ByteArrayInputStream(new byte[] {1}));
+				wrappedPreparedStatement.clearParameters();
+				wrappedPreparedStatement.setInt(1, RandomTestUtil.randomInt());
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).clearParameters();
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).setInt(
+					Mockito.eq(1), Mockito.anyInt()
+				);
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				wrappedPreparedStatement.executeQuery();
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.atLeastOnce()
+				).executeQuery();
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();
@@ -173,6 +305,371 @@ public class UpgradeLogProgressTrackerTest {
 					log, Mockito.never()
 				).info(
 					Mockito.anyString()
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testConcurrentResultSetIterationDoesNotCorruptRegistry()
+		throws Exception {
+
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				int iterationsPerThread = 200;
+				int threadCount = 4;
+
+				AtomicReference<Throwable> throwableReference =
+					new AtomicReference<>();
+
+				CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+
+				ExecutorService executorService = Executors.newFixedThreadPool(
+					threadCount);
+
+				try {
+					for (int i = 0; i < threadCount; i++) {
+						executorService.submit(
+							() -> {
+								try {
+									for (int j = 0; j < iterationsPerThread;
+										 j++) {
+
+										ResultSet resultSet = _mockResultSet();
+
+										ResultSet wrappedResultSet =
+											_wrapResultSet(
+												"com.liferay.test." +
+													"SampleUpgradeProcess",
+												resultSet);
+
+										wrappedResultSet.next();
+										wrappedResultSet.close();
+									}
+								}
+								catch (Throwable throwable) {
+									throwableReference.compareAndSet(
+										null, throwable);
+								}
+								finally {
+									countDownLatch.countDown();
+								}
+							});
+					}
+
+					Assert.assertTrue(
+						countDownLatch.await(30, TimeUnit.SECONDS));
+				}
+				finally {
+					executorService.shutdown();
+				}
+
+				Throwable throwable = throwableReference.get();
+
+				if (throwable != null) {
+					throw new AssertionError("Worker thread failed", throwable);
+				}
+
+				Map<String, Long> lastKnownProgresses =
+					UpgradeLogProgressTracker.getLastKnownProgresses();
+
+				Assert.assertTrue(
+					lastKnownProgresses.toString(),
+					lastKnownProgresses.isEmpty());
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testCountQueryAppliesTenSecondTimeout() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				ResultSet countResultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					countMockPreparedStatement.executeQuery()
+				).thenReturn(
+					countResultSet
+				);
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				wrappedPreparedStatement.executeQuery();
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.atLeastOnce()
+				).setQueryTimeout(
+					10
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testCountQueryCancelsWatchdogOnCompletion() throws Exception {
+		ScheduledThreadPoolExecutor mockedScheduler = Mockito.mock(
+			ScheduledThreadPoolExecutor.class);
+
+		try (AutoCloseable schedulerAutoCloseable =
+				ReflectionTestUtil.setFieldValueWithAutoCloseable(
+					UpgradeLogProgressTracker.class, "_countCancelScheduler",
+					mockedScheduler);
+			SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				ArgumentCaptor<Runnable> runnableArgumentCaptor =
+					ArgumentCaptor.forClass(Runnable.class);
+
+				ScheduledFuture<?> scheduledFuture = Mockito.mock(
+					ScheduledFuture.class);
+
+				Mockito.doReturn(
+					scheduledFuture
+				).when(
+					mockedScheduler
+				).schedule(
+					runnableArgumentCaptor.capture(), Mockito.eq(10L),
+					Mockito.eq(TimeUnit.SECONDS)
+				);
+
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				ResultSet countResultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					countMockPreparedStatement.executeQuery()
+				).thenReturn(
+					countResultSet
+				);
+
+				Mockito.when(
+					countResultSet.next()
+				).thenReturn(
+					true
+				);
+
+				Mockito.when(
+					countResultSet.getLong(1)
+				).thenReturn(
+					RandomTestUtil.randomLong()
+				);
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					Mockito.mock(ResultSet.class)
+				);
+
+				wrappedPreparedStatement.executeQuery();
+
+				Mockito.verify(
+					scheduledFuture, Mockito.atLeastOnce()
+				).cancel(
+					false
+				);
+
+				Runnable cancelRunnable = runnableArgumentCaptor.getValue();
+
+				cancelRunnable.run();
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.atLeastOnce()
+				).cancel();
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testCountQueryDoesNotPolluteSqlRecorder() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable thresholdSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_REPORT_SQL_STATEMENT_THRESHOLD", 0L)) {
+
+			UpgradeLogProgressTracker.start();
+			UpgradeSQLRecorder.start();
+
+			try {
+				Connection underlyingConnection = Mockito.mock(
+					Connection.class);
+
+				PreparedStatement countPreparedStatement = Mockito.mock(
+					PreparedStatement.class);
+
+				PreparedStatement mainPreparedStatement = Mockito.mock(
+					PreparedStatement.class);
+
+				Mockito.when(
+					underlyingConnection.prepareStatement("select * from Foo")
+				).thenReturn(
+					mainPreparedStatement
+				);
+
+				Mockito.when(
+					underlyingConnection.prepareStatement(
+						Mockito.startsWith("SELECT COUNT(1) FROM ("))
+				).thenReturn(
+					countPreparedStatement
+				);
+
+				Mockito.when(
+					countPreparedStatement.executeQuery()
+				).thenThrow(
+					new SQLException("count failed")
+				);
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					mainPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				Connection recorderWrappedConnection =
+					UpgradeSQLRecorder.getConnectionWrapper(
+						underlyingConnection,
+						"com.liferay.test.SampleUpgradeProcess");
+
+				Connection trackerWrappedConnection =
+					UpgradeLogProgressTracker.wrap(
+						recorderWrappedConnection,
+						"com.liferay.test.SampleUpgradeProcess");
+
+				PreparedStatement wrappedPreparedStatement =
+					trackerWrappedConnection.prepareStatement(
+						"select * from Foo");
+
+				wrappedPreparedStatement.executeQuery();
+
+				for (UpgradeSQLRecorder.FailedSQL failedSQL :
+						UpgradeSQLRecorder.getFailedSQLs()) {
+
+					Assert.assertFalse(
+						failedSQL.toString(),
+						failedSQL.getSQL(
+						).contains(
+							"SELECT COUNT(1)"
+						));
+				}
+
+				for (UpgradeSQLRecorder.RunningSQL runningSQL :
+						UpgradeSQLRecorder.getRunningSQLs()) {
+
+					Assert.assertFalse(
+						runningSQL.toString(),
+						runningSQL.getSQL(
+						).contains(
+							"SELECT COUNT(1)"
+						));
+				}
+			}
+			finally {
+				UpgradeSQLRecorder.stop();
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testCountQueryFailureDegrades() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			Log log = _getLog();
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				Mockito.when(
+					countMockPreparedStatement.executeQuery()
+				).thenThrow(
+					new SQLException("count failed")
+				);
+
+				ResultSet resultSet = _mockResultSet();
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				ResultSet wrappedResultSet =
+					wrappedPreparedStatement.executeQuery();
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
+				Mockito.verify(
+					log
+				).info(
+					registryKey + " is still executing. Processed 1 rows."
 				);
 			}
 			finally {
@@ -573,6 +1070,146 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
+	public void testNextLogsWithTotalAndPercentage() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			Log log = _getLog();
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				ResultSet countResultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					countMockPreparedStatement.executeQuery()
+				).thenReturn(
+					countResultSet
+				);
+
+				Mockito.when(
+					countResultSet.next()
+				).thenReturn(
+					true
+				);
+
+				Mockito.when(
+					countResultSet.getLong(1)
+				).thenReturn(
+					200L
+				);
+
+				ResultSet resultSet = _mockResultSet();
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				ResultSet wrappedResultSet =
+					wrappedPreparedStatement.executeQuery();
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
+				Mockito.verify(
+					log
+				).info(
+					registryKey +
+						" is still executing. Processed 1 of 200 rows. (0%)"
+				);
+
+				Map<String, Long> lastKnownTotalCounts =
+					UpgradeLogProgressTracker.getLastKnownTotalCounts();
+
+				Assert.assertEquals(
+					Long.valueOf(200L), lastKnownTotalCounts.get(registryKey));
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testParameterMirroringWhitelist() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo where x = ?");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				wrappedPreparedStatement.setInt(1, RandomTestUtil.randomInt());
+				wrappedPreparedStatement.setLong(
+					2, RandomTestUtil.randomLong());
+				wrappedPreparedStatement.setString(
+					3, RandomTestUtil.randomString());
+				wrappedPreparedStatement.setNull(4, Types.INTEGER);
+				wrappedPreparedStatement.setBoolean(5, true);
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).setInt(
+					Mockito.eq(1), Mockito.anyInt()
+				);
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).setLong(
+					Mockito.eq(2), Mockito.anyLong()
+				);
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).setString(
+					Mockito.eq(3), Mockito.anyString()
+				);
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).setNull(
+					4, Types.INTEGER
+				);
+
+				Mockito.verify(
+					countMockPreparedStatement
+				).setBoolean(
+					5, true
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
 	public void testStartClearsRegistry() throws Exception {
 		try (SafeCloseable safeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
@@ -618,6 +1255,96 @@ public class UpgradeLogProgressTrackerTest {
 					"Granular progress logging for upgrades is enabled. This " +
 						"may decrease performance.",
 					logEntry.getMessage());
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testStatementConfigSettersNotMirrored() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				wrappedPreparedStatement.setFetchSize(100);
+				wrappedPreparedStatement.setMaxRows(50);
+				wrappedPreparedStatement.setQueryTimeout(30);
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.never()
+				).setFetchSize(
+					Mockito.anyInt()
+				);
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.never()
+				).setMaxRows(
+					Mockito.anyInt()
+				);
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.never()
+				).setQueryTimeout(
+					Mockito.anyInt()
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testUnsafeStreamSetterSkipsCount() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					"select * from Foo where x = ?");
+
+				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				InputStream inputStream = new ByteArrayInputStream(
+					new byte[] {1, 2});
+
+				wrappedPreparedStatement.setBinaryStream(1, inputStream);
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.never()
+				).setBinaryStream(
+					Mockito.anyInt(), Mockito.any()
+				);
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				wrappedPreparedStatement.executeQuery();
+
+				Mockito.verify(
+					countMockPreparedStatement, Mockito.never()
+				).executeQuery();
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();
@@ -772,6 +1499,15 @@ public class UpgradeLogProgressTrackerTest {
 		return log;
 	}
 
+	private String _invokeBuildCountSQL(String sql) throws Exception {
+		Method method = UpgradeLogProgressTracker.class.getDeclaredMethod(
+			"_buildCountSQL", String.class);
+
+		method.setAccessible(true);
+
+		return (String)method.invoke(null, sql);
+	}
+
 	private ResultSet _mockResultSet() throws Exception {
 		ResultSet resultSet = Mockito.mock(ResultSet.class);
 
@@ -782,6 +1518,41 @@ public class UpgradeLogProgressTrackerTest {
 		);
 
 		return resultSet;
+	}
+
+	private PreparedStatement[] _setUpPreparedMirror(String sql)
+		throws Exception {
+
+		Connection connection = Mockito.mock(Connection.class);
+
+		PreparedStatement countPreparedStatement = Mockito.mock(
+			PreparedStatement.class);
+
+		PreparedStatement mainPreparedStatement = Mockito.mock(
+			PreparedStatement.class);
+
+		Mockito.when(
+			connection.prepareStatement(sql)
+		).thenReturn(
+			mainPreparedStatement
+		);
+
+		Mockito.when(
+			connection.prepareStatement(
+				Mockito.startsWith("SELECT COUNT(1) FROM ("))
+		).thenReturn(
+			countPreparedStatement
+		);
+
+		Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
+			connection, "com.liferay.test.SampleUpgradeProcess");
+
+		PreparedStatement wrappedPreparedStatement =
+			wrappedConnection.prepareStatement(sql);
+
+		return new PreparedStatement[] {
+			countPreparedStatement, wrappedPreparedStatement
+		};
 	}
 
 	private ResultSet _wrapResultSet(
