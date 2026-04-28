@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.util.NamedThreadFactory;
 import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -224,18 +225,15 @@ public class UpgradeLogProgressTracker {
 	}
 
 	private static String _buildCountSQL(String sql) {
-		if ((sql == null) || sql.isBlank() || !_isSelect(sql)) {
+		if (Validator.isNull(sql) || !_isSelect(sql)) {
 			return null;
 		}
 
-		String stripped = _stripOrderBy(
-			sql
-		).stripTrailing();
+		String stripped = StringUtil.trimTrailing(_stripOrderBy(sql));
 
 		if (stripped.endsWith(StringPool.SEMICOLON)) {
-			stripped = stripped.substring(
-				0, stripped.length() - 1
-			).stripTrailing();
+			stripped = StringUtil.trimTrailing(
+				stripped.substring(0, stripped.length() - 1));
 		}
 
 		return StringBundler.concat(

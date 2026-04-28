@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.upgrade.recorder;
 
+import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
@@ -511,8 +512,9 @@ public class UpgradeSQLRecorder {
 		new CopyOnWriteArrayList<>();
 	private static final Set<RunningSQL> _runningSQLs =
 		new CopyOnWriteArraySet<>();
-	private static final ThreadLocal<Boolean> _skipRecording =
-		ThreadLocal.withInitial(() -> Boolean.FALSE);
+	private static final CentralizedThreadLocal<Boolean> _skipRecording =
+		new CentralizedThreadLocal<>(
+			UpgradeSQLRecorder.class + "._skipRecording", () -> Boolean.FALSE);
 	private static volatile String _upgradeProcessClassName = StringPool.BLANK;
 
 	@FunctionalInterface

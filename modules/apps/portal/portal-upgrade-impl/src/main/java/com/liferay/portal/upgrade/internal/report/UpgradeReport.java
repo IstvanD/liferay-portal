@@ -635,9 +635,10 @@ public class UpgradeReport {
 				return TransformUtil.transform(
 					lastKnownProgresses.entrySet(),
 					entry -> {
-						Long total = lastKnownTotalCounts.get(entry.getKey());
+						long total = GetterUtil.getLong(
+							lastKnownTotalCounts.get(entry.getKey()));
 
-						if ((total != null) && (total > 0)) {
+						if (total > 0) {
 							return StringBundler.concat(
 								entry.getKey(), " processed approximately ",
 								entry.getValue(), " of ", total, " rows");
