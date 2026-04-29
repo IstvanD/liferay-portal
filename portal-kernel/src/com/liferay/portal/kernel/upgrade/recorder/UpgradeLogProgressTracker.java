@@ -14,7 +14,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.NamedThreadFactory;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -31,16 +31,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -225,11 +224,17 @@ public class UpgradeLogProgressTracker {
 	}
 
 	private static String _buildCountSQL(String sql) {
-		if (Validator.isNull(sql) || !_isSelect(sql)) {
+		if (Validator.isNull(sql)) {
 			return null;
 		}
 
-		String stripped = StringUtil.trimTrailing(_stripOrderBy(sql));
+		String lowerSQL = StringUtil.toLowerCase(sql);
+
+		if (!_isSelect(lowerSQL)) {
+			return null;
+		}
+
+		String stripped = StringUtil.trimTrailing(_stripOrderBy(sql, lowerSQL));
 
 		if (stripped.endsWith(StringPool.SEMICOLON)) {
 			stripped = StringUtil.trimTrailing(
@@ -237,24 +242,11 @@ public class UpgradeLogProgressTracker {
 		}
 
 		return StringBundler.concat(
-			"SELECT COUNT(1) FROM (", stripped, ") tempCountTable_");
+			"select count(1) from (", stripped, ") tempCountTable_");
 	}
 
-	private static ScheduledThreadPoolExecutor _createCountCancelScheduler() {
-		ScheduledThreadPoolExecutor scheduledThreadPoolExecutor =
-			new ScheduledThreadPoolExecutor(
-				1,
-				new NamedThreadFactory(
-					"UpgradeLogProgressCountCancel", Thread.NORM_PRIORITY,
-					UpgradeLogProgressTracker.class.getClassLoader()));
-
-		scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
-
-		return scheduledThreadPoolExecutor;
-	}
-
-	private static boolean _isSelect(String sql) {
-		String trimmed = StringUtil.toLowerCase(sql.stripLeading());
+	private static boolean _isSelect(String lowerSQL) {
+		String trimmed = lowerSQL.stripLeading();
 
 		if (trimmed.startsWith("select ") || trimmed.startsWith("select(")) {
 			return true;
@@ -264,7 +256,7 @@ public class UpgradeLogProgressTracker {
 	}
 
 	private static PreparedStatement _prepareCountStatement(
-		Connection underlyingConnection, String sql) {
+		Connection connection, String sql) {
 
 		String countSQL = _buildCountSQL(sql);
 
@@ -273,7 +265,7 @@ public class UpgradeLogProgressTracker {
 		}
 
 		try {
-			return underlyingConnection.prepareStatement(countSQL);
+			return connection.prepareStatement(countSQL);
 		}
 		catch (Throwable throwable) {
 			if (_log.isDebugEnabled()) {
@@ -285,8 +277,6 @@ public class UpgradeLogProgressTracker {
 	}
 
 	private static Long _runCount(PreparedStatement countPreparedStatement) {
-		ScheduledFuture<?> cancelFuture = null;
-
 		try (SafeCloseable safeCloseable =
 				UpgradeSQLRecorder.suppressRecording()) {
 
@@ -296,16 +286,6 @@ public class UpgradeLogProgressTracker {
 			}
 			catch (Throwable throwable) {
 			}
-
-			cancelFuture = _countCancelScheduler.schedule(
-				() -> {
-					try {
-						countPreparedStatement.cancel();
-					}
-					catch (Throwable throwable) {
-					}
-				},
-				_COUNT_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
 			try (ResultSet resultSet = countPreparedStatement.executeQuery()) {
 				if (resultSet.next()) {
@@ -318,21 +298,12 @@ public class UpgradeLogProgressTracker {
 				_log.debug("Skipping count query", throwable);
 			}
 		}
-		finally {
-			if (cancelFuture != null) {
-				cancelFuture.cancel(false);
-			}
-		}
 
 		return null;
 	}
 
-	private static String _stripOrderBy(String sql) {
-		int index = StringUtil.toLowerCase(
-			sql
-		).lastIndexOf(
-			" order by "
-		);
+	private static String _stripOrderBy(String sql, String lowerSQL) {
+		int index = lowerSQL.lastIndexOf(" order by ");
 
 		if (index < 0) {
 			return sql;
@@ -390,8 +361,6 @@ public class UpgradeLogProgressTracker {
 	private static final Log _log = LogFactoryUtil.getLog(
 		UpgradeLogProgressTracker.class);
 
-	private static final ScheduledThreadPoolExecutor _countCancelScheduler =
-		_createCountCancelScheduler();
 	private static volatile boolean _enabled;
 	private static final AtomicLong _handlerCounter = new AtomicLong();
 	private static final Map<String, Long> _lastKnownProgresses =
@@ -438,12 +407,12 @@ public class UpgradeLogProgressTracker {
 
 					_lastKnownProgresses.put(_registryKey, _rowCount);
 
-					if ((_totalRowCount != null) && (_totalRowCount > 0)) {
+					if (_totalRowCount > 0) {
 						_lastKnownTotalCounts.put(_registryKey, _totalRowCount);
 					}
 
 					if (_log.isInfoEnabled()) {
-						if ((_totalRowCount != null) && (_totalRowCount > 0)) {
+						if (_totalRowCount > 0) {
 							long percentage =
 								(_rowCount * 100L) / _totalRowCount;
 
@@ -467,13 +436,7 @@ public class UpgradeLogProgressTracker {
 				}
 			}
 			else if (Objects.equals(methodName, "close")) {
-				if (_lastKnownProgresses.remove(_registryKey) != null) {
-					_lastKnownTotalCounts.remove(_registryKey);
-
-					if (_log.isInfoEnabled()) {
-						_log.info(_registryKey + " finished.");
-					}
-				}
+				_cleanUpRegistry();
 			}
 
 			return result;
@@ -485,7 +448,7 @@ public class UpgradeLogProgressTracker {
 
 			_resultSet = resultSet;
 			_statementProxy = statementProxy;
-			_totalRowCount = totalRowCount;
+			_totalRowCount = GetterUtil.getLong(totalRowCount);
 
 			long handlerId = _handlerCounter.incrementAndGet();
 
@@ -503,12 +466,22 @@ public class UpgradeLogProgressTracker {
 			_lastLogTime = System.currentTimeMillis();
 		}
 
+		private void _cleanUpRegistry() {
+			if (_lastKnownProgresses.remove(_registryKey) != null) {
+				_lastKnownTotalCounts.remove(_registryKey);
+
+				if (_log.isInfoEnabled()) {
+					_log.info(_registryKey + " finished.");
+				}
+			}
+		}
+
 		private long _lastLogTime;
 		private final String _registryKey;
 		private final ResultSet _resultSet;
 		private long _rowCount;
 		private final Statement _statementProxy;
-		private final Long _totalRowCount;
+		private final long _totalRowCount;
 
 	}
 
@@ -534,7 +507,7 @@ public class UpgradeLogProgressTracker {
 							method.invoke(_countPreparedStatement, args);
 						}
 						catch (Throwable throwable) {
-							_disposeCountStatement(throwable);
+							_cleanUpCountStatement(throwable);
 						}
 					}
 
@@ -555,7 +528,7 @@ public class UpgradeLogProgressTracker {
 							method.invoke(_countPreparedStatement, args);
 						}
 						catch (Throwable throwable) {
-							_disposeCountStatement(throwable);
+							_cleanUpCountStatement(throwable);
 						}
 					}
 					else {
@@ -591,6 +564,14 @@ public class UpgradeLogProgressTracker {
 
 				_countPreparedStatement = null;
 
+				for (ResultSetInvocationHandler resultSetInvocationHandler :
+						_resultSetInvocationHandlers) {
+
+					resultSetInvocationHandler._cleanUpRegistry();
+				}
+
+				_resultSetInvocationHandlers.clear();
+
 				return _delegate(method, args);
 			}
 
@@ -607,6 +588,17 @@ public class UpgradeLogProgressTracker {
 			_underlyingConnection = underlyingConnection;
 			_upgradeProcessClassName = upgradeProcessClassName;
 			_wrapperConnection = wrapperConnection;
+		}
+
+		private void _cleanUpCountStatement(Throwable throwable) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Disabling count query after mirror failure", throwable);
+			}
+
+			DataAccess.cleanUp(_countPreparedStatement);
+
+			_countPreparedStatement = null;
 		}
 
 		private Object _delegate(Method method, Object[] args)
@@ -627,23 +619,18 @@ public class UpgradeLogProgressTracker {
 			Object result = _delegate(method, args);
 
 			if (result instanceof ResultSet) {
-				return _wrap(
+				ResultSet wrappedResultSet = _wrap(
 					(ResultSet)result, (Statement)proxy,
 					_upgradeProcessClassName, totalRowCount);
+
+				_resultSetInvocationHandlers.add(
+					(ResultSetInvocationHandler)ProxyUtil.getInvocationHandler(
+						wrappedResultSet));
+
+				return wrappedResultSet;
 			}
 
 			return result;
-		}
-
-		private void _disposeCountStatement(Throwable throwable) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Disabling count query after mirror failure", throwable);
-			}
-
-			DataAccess.cleanUp(_countPreparedStatement);
-
-			_countPreparedStatement = null;
 		}
 
 		private Long _runCountForSQL(String sql) {
@@ -667,6 +654,8 @@ public class UpgradeLogProgressTracker {
 
 		private PreparedStatement _countPreparedStatement;
 		private boolean _hasUnsafeBinding;
+		private final List<ResultSetInvocationHandler>
+			_resultSetInvocationHandlers = new ArrayList<>();
 		private final Statement _statement;
 		private final Connection _underlyingConnection;
 		private final String _upgradeProcessClassName;
