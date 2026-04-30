@@ -103,33 +103,21 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
-	public void testBuildCountSQLForSelect() throws Exception {
+	public void testBuildCountSQL() throws Exception {
 		Assert.assertEquals(
 			"select count(1) from (select * from Foo) tempCountTable_",
 			_invokeBuildCountSQL(_SELECT_SQL));
-	}
 
-	@Test
-	public void testBuildCountSQLSkipsCallStatementSQL() throws Exception {
 		Assert.assertNull(_invokeBuildCountSQL("call foo()"));
-	}
 
-	@Test
-	public void testBuildCountSQLSkipsNonselect() throws Exception {
 		Assert.assertNull(_invokeBuildCountSQL("update Foo set x = 1"));
 		Assert.assertNull(
 			_invokeBuildCountSQL("insert into Foo (x) values (1)"));
 		Assert.assertNull(_invokeBuildCountSQL("delete from Foo"));
 		Assert.assertNull(_invokeBuildCountSQL("create table Foo (x int)"));
-	}
 
-	@Test
-	public void testBuildCountSQLSkipsSelectivityIdentifier() throws Exception {
 		Assert.assertNull(_invokeBuildCountSQL("selectivity_score"));
-	}
 
-	@Test
-	public void testBuildCountSQLStripsTopLevelOrderBy() throws Exception {
 		String result = _invokeBuildCountSQL("select * from Foo order by id");
 
 		String lowerResult = StringUtil.toLowerCase(result);
@@ -137,14 +125,12 @@ public class UpgradeLogProgressTrackerTest {
 		Assert.assertFalse(lowerResult.contains("order by id"));
 
 		Assert.assertTrue(result.contains("tempCountTable_"));
-	}
 
-	@Test
-	public void testBuildCountSQLStripsTrailingSemicolon() throws Exception {
-		String result = _invokeBuildCountSQL("select * from Foo order by id;");
+		String resultWithSemicolon = _invokeBuildCountSQL(
+			"select * from Foo order by id;");
 
-		Assert.assertFalse(result.contains("order by id;"));
-		Assert.assertFalse(result.contains(";) tempCountTable_"));
+		Assert.assertFalse(resultWithSemicolon.contains("order by id;"));
+		Assert.assertFalse(resultWithSemicolon.contains(";) tempCountTable_"));
 	}
 
 	@Test
