@@ -541,7 +541,6 @@ public class UpgradeLogProgressTrackerTest {
 					"select * from Foo");
 
 				PreparedStatement countMockPreparedStatement = statements[0];
-
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
 				Mockito.when(
