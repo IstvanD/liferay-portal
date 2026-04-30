@@ -514,7 +514,8 @@ public class UpgradeSQLRecorder {
 		new CopyOnWriteArraySet<>();
 	private static final CentralizedThreadLocal<Boolean> _skipRecording =
 		new CentralizedThreadLocal<>(
-			UpgradeSQLRecorder.class + "._skipRecording", () -> Boolean.FALSE);
+			UpgradeSQLRecorder.class.getName() + "._skipRecording",
+			() -> Boolean.FALSE);
 	private static volatile String _upgradeProcessClassName = StringPool.BLANK;
 
 	@FunctionalInterface
