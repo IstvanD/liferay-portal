@@ -159,13 +159,13 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_WITH_PARAMETER_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
 				ResultSet countResultSet = Mockito.mock(ResultSet.class);
 
 				Mockito.when(
-					countMockPreparedStatement.executeQuery()
+					countPreparedStatement.executeQuery()
 				).thenReturn(
 					countResultSet
 				);
@@ -188,11 +188,11 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.setInt(1, RandomTestUtil.randomInt());
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).clearParameters();
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).setInt(
 					Mockito.eq(1), Mockito.anyInt()
 				);
@@ -208,7 +208,7 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.executeQuery();
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.atLeastOnce()
+					countPreparedStatement, Mockito.atLeastOnce()
 				).executeQuery();
 			}
 			finally {
@@ -396,13 +396,13 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
 				ResultSet countResultSet = Mockito.mock(ResultSet.class);
 
 				Mockito.when(
-					countMockPreparedStatement.executeQuery()
+					countPreparedStatement.executeQuery()
 				).thenReturn(
 					countResultSet
 				);
@@ -418,7 +418,7 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.executeQuery();
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.atLeastOnce()
+					countPreparedStatement, Mockito.atLeastOnce()
 				).setQueryTimeout(
 					10
 				);
@@ -535,11 +535,11 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
 				Mockito.when(
-					countMockPreparedStatement.executeQuery()
+					countPreparedStatement.executeQuery()
 				).thenThrow(
 					new SQLException("count failed")
 				);
@@ -980,13 +980,13 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
 				ResultSet countResultSet = Mockito.mock(ResultSet.class);
 
 				Mockito.when(
-					countMockPreparedStatement.executeQuery()
+					countPreparedStatement.executeQuery()
 				).thenReturn(
 					countResultSet
 				);
@@ -1055,7 +1055,7 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_WITH_PARAMETER_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
@@ -1068,31 +1068,31 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.setBoolean(5, true);
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).setInt(
 					Mockito.eq(1), Mockito.anyInt()
 				);
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).setLong(
 					Mockito.eq(2), Mockito.anyLong()
 				);
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).setString(
 					Mockito.eq(3), Mockito.anyString()
 				);
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).setNull(
 					4, Types.INTEGER
 				);
 
 				Mockito.verify(
-					countMockPreparedStatement
+					countPreparedStatement
 				).setBoolean(
 					5, true
 				);
@@ -1213,7 +1213,7 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
@@ -1222,19 +1222,19 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.setQueryTimeout(30);
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.never()
+					countPreparedStatement, Mockito.never()
 				).setFetchSize(
 					Mockito.anyInt()
 				);
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.never()
+					countPreparedStatement, Mockito.never()
 				).setMaxRows(
 					Mockito.anyInt()
 				);
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.never()
+					countPreparedStatement, Mockito.never()
 				).setQueryTimeout(
 					Mockito.anyInt()
 				);
@@ -1257,7 +1257,7 @@ public class UpgradeLogProgressTrackerTest {
 				PreparedStatement[] statements = _setUpPreparedMirror(
 					_SELECT_WITH_PARAMETER_SQL);
 
-				PreparedStatement countMockPreparedStatement = statements[0];
+				PreparedStatement countPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
 
 				InputStream inputStream = new ByteArrayInputStream(
@@ -1266,7 +1266,7 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.setBinaryStream(1, inputStream);
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.never()
+					countPreparedStatement, Mockito.never()
 				).setBinaryStream(
 					Mockito.anyInt(), Mockito.any()
 				);
@@ -1282,7 +1282,7 @@ public class UpgradeLogProgressTrackerTest {
 				wrappedPreparedStatement.executeQuery();
 
 				Mockito.verify(
-					countMockPreparedStatement, Mockito.never()
+					countPreparedStatement, Mockito.never()
 				).executeQuery();
 			}
 			finally {
