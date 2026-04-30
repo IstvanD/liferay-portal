@@ -106,7 +106,7 @@ public class UpgradeLogProgressTrackerTest {
 	public void testBuildCountSQLForSelect() throws Exception {
 		Assert.assertEquals(
 			"select count(1) from (select * from Foo) tempCountTable_",
-			_invokeBuildCountSQL("select * from Foo"));
+			_invokeBuildCountSQL(_SELECT_SQL));
 	}
 
 	@Test
@@ -157,7 +157,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo where x = ?");
+					_SELECT_WITH_PARAMETER_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
@@ -231,8 +231,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
+				String upgradeProcessClassName = _UPGRADE_PROCESS_CLASS_NAME;
 
 				ResultSet resultSet = _mockResultSet();
 
@@ -289,7 +288,7 @@ public class UpgradeLogProgressTrackerTest {
 				ResultSet resultSet = _mockResultSet();
 
 				ResultSet wrappedResultSet = _wrapResultSet(
-					"com.liferay.test.SampleUpgradeProcess", resultSet);
+					_UPGRADE_PROCESS_CLASS_NAME, resultSet);
 
 				Assert.assertTrue(wrappedResultSet.next());
 
@@ -344,8 +343,7 @@ public class UpgradeLogProgressTrackerTest {
 
 										ResultSet wrappedResultSet =
 											_wrapResultSet(
-												"com.liferay.test." +
-													"SampleUpgradeProcess",
+												_UPGRADE_PROCESS_CLASS_NAME,
 												resultSet);
 
 										wrappedResultSet.next();
@@ -396,7 +394,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo");
+					_SELECT_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
@@ -454,7 +452,7 @@ public class UpgradeLogProgressTrackerTest {
 					PreparedStatement.class);
 
 				Mockito.when(
-					underlyingConnection.prepareStatement("select * from Foo")
+					underlyingConnection.prepareStatement(_SELECT_SQL)
 				).thenReturn(
 					mainPreparedStatement
 				);
@@ -482,17 +480,14 @@ public class UpgradeLogProgressTrackerTest {
 
 				Connection recorderWrappedConnection =
 					UpgradeSQLRecorder.getConnectionWrapper(
-						underlyingConnection,
-						"com.liferay.test.SampleUpgradeProcess");
+						underlyingConnection, _UPGRADE_PROCESS_CLASS_NAME);
 
 				Connection trackerWrappedConnection =
 					UpgradeLogProgressTracker.wrap(
-						recorderWrappedConnection,
-						"com.liferay.test.SampleUpgradeProcess");
+						recorderWrappedConnection, _UPGRADE_PROCESS_CLASS_NAME);
 
 				PreparedStatement wrappedPreparedStatement =
-					trackerWrappedConnection.prepareStatement(
-						"select * from Foo");
+					trackerWrappedConnection.prepareStatement(_SELECT_SQL);
 
 				wrappedPreparedStatement.executeQuery();
 
@@ -538,7 +533,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo");
+					_SELECT_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
@@ -608,7 +603,7 @@ public class UpgradeLogProgressTrackerTest {
 				);
 
 				ResultSet wrappedResultSet = _wrapResultSet(
-					"com.liferay.test.SampleUpgradeProcess", resultSet);
+					_UPGRADE_PROCESS_CLASS_NAME, resultSet);
 
 				Assert.assertEquals(
 					columnValue, wrappedResultSet.getString(columnName));
@@ -637,8 +632,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
+				String upgradeProcessClassName = _UPGRADE_PROCESS_CLASS_NAME;
 
 				ResultSet innerResultSet = _mockResultSet();
 				ResultSet outerResultSet = _mockResultSet();
@@ -741,8 +735,7 @@ public class UpgradeLogProgressTrackerTest {
 			try {
 				ResultSet resultSet = _mockResultSet();
 
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
+				String upgradeProcessClassName = _UPGRADE_PROCESS_CLASS_NAME;
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -783,8 +776,7 @@ public class UpgradeLogProgressTrackerTest {
 					false
 				);
 
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
+				String upgradeProcessClassName = _UPGRADE_PROCESS_CLASS_NAME;
 
 				ResultSet wrappedResultSet = _wrapResultSet(
 					upgradeProcessClassName, resultSet);
@@ -834,7 +826,7 @@ public class UpgradeLogProgressTrackerTest {
 					ResultSet resultSet = _mockResultSet();
 
 					String upgradeProcessClassName =
-						"com.liferay.test.SampleUpgradeProcess";
+						_UPGRADE_PROCESS_CLASS_NAME;
 
 					ResultSet wrappedResultSet = _wrapResultSet(
 						upgradeProcessClassName, resultSet);
@@ -881,8 +873,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
+				String upgradeProcessClassName = _UPGRADE_PROCESS_CLASS_NAME;
 
 				ResultSet resultSet = _mockResultSet();
 
@@ -931,8 +922,7 @@ public class UpgradeLogProgressTrackerTest {
 			UpgradeLogProgressTracker.start();
 
 			try {
-				String upgradeProcessClassName =
-					"com.liferay.test.SampleUpgradeProcess";
+				String upgradeProcessClassName = _UPGRADE_PROCESS_CLASS_NAME;
 
 				ResultSet resultSet = _mockResultSet();
 
@@ -988,7 +978,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo");
+					_SELECT_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
@@ -1063,7 +1053,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo where x = ?");
+					_SELECT_WITH_PARAMETER_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 
@@ -1181,7 +1171,7 @@ public class UpgradeLogProgressTrackerTest {
 				ResultSet resultSet = _mockResultSet();
 
 				ResultSet wrappedResultSet = _wrapResultSet(
-					"com.liferay.test.SampleUpgradeProcess", resultSet);
+					_UPGRADE_PROCESS_CLASS_NAME, resultSet);
 
 				ReflectionTestUtil.setFieldValue(
 					ProxyUtil.getInvocationHandler(wrappedResultSet),
@@ -1221,7 +1211,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo");
+					_SELECT_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 
@@ -1265,7 +1255,7 @@ public class UpgradeLogProgressTrackerTest {
 
 			try {
 				PreparedStatement[] statements = _setUpPreparedMirror(
-					"select * from Foo where x = ?");
+					_SELECT_WITH_PARAMETER_SQL);
 
 				PreparedStatement countMockPreparedStatement = statements[0];
 				PreparedStatement wrappedPreparedStatement = statements[1];
@@ -1313,7 +1303,7 @@ public class UpgradeLogProgressTrackerTest {
 				Connection connection = Mockito.mock(Connection.class);
 
 				Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
-					connection, "com.liferay.test.SampleUpgradeProcess");
+					connection, _UPGRADE_PROCESS_CLASS_NAME);
 
 				Assert.assertSame(connection, wrappedConnection);
 			}
@@ -1335,7 +1325,7 @@ public class UpgradeLogProgressTrackerTest {
 				Connection connection = Mockito.mock(Connection.class);
 
 				Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
-					connection, "com.liferay.test.SampleUpgradeProcess");
+					connection, _UPGRADE_PROCESS_CLASS_NAME);
 
 				Assert.assertNotSame(connection, wrappedConnection);
 
@@ -1494,7 +1484,7 @@ public class UpgradeLogProgressTrackerTest {
 		);
 
 		Connection wrappedConnection = UpgradeLogProgressTracker.wrap(
-			connection, "com.liferay.test.SampleUpgradeProcess");
+			connection, _UPGRADE_PROCESS_CLASS_NAME);
 
 		PreparedStatement wrappedPreparedStatement =
 			wrappedConnection.prepareStatement(sql);
@@ -1530,6 +1520,14 @@ public class UpgradeLogProgressTrackerTest {
 
 		return wrappedStatement.executeQuery("select 1");
 	}
+
+	private static final String _SELECT_SQL = "select * from Foo";
+
+	private static final String _SELECT_WITH_PARAMETER_SQL =
+		"select * from Foo where x = ?";
+
+	private static final String _UPGRADE_PROCESS_CLASS_NAME =
+		"com.liferay.test.SampleUpgradeProcess";
 
 	private Log _originalLog;
 
