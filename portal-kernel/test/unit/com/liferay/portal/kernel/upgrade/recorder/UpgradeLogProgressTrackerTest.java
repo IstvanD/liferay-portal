@@ -132,8 +132,6 @@ public class UpgradeLogProgressTrackerTest {
 	public void testBuildCountSQLStripsTopLevelOrderBy() throws Exception {
 		String result = _invokeBuildCountSQL("select * from Foo order by id");
 
-		Assert.assertNotNull(result);
-
 		String lowerResult = StringUtil.toLowerCase(result);
 
 		Assert.assertFalse(lowerResult, lowerResult.contains("order by id"));
@@ -145,7 +143,6 @@ public class UpgradeLogProgressTrackerTest {
 	public void testBuildCountSQLStripsTrailingSemicolon() throws Exception {
 		String result = _invokeBuildCountSQL("select * from Foo order by id;");
 
-		Assert.assertNotNull(result);
 		Assert.assertFalse(result, result.contains("order by id;"));
 		Assert.assertFalse(result, result.contains(";) tempCountTable_"));
 	}
