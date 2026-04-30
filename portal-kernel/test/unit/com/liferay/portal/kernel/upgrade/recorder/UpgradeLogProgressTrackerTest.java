@@ -134,7 +134,7 @@ public class UpgradeLogProgressTrackerTest {
 
 		String lowerResult = StringUtil.toLowerCase(result);
 
-		Assert.assertFalse(lowerResult, lowerResult.contains("order by id"));
+		Assert.assertFalse(lowerResult.contains("order by id"));
 
 		Assert.assertTrue(result.contains("tempCountTable_"));
 	}
@@ -143,8 +143,8 @@ public class UpgradeLogProgressTrackerTest {
 	public void testBuildCountSQLStripsTrailingSemicolon() throws Exception {
 		String result = _invokeBuildCountSQL("select * from Foo order by id;");
 
-		Assert.assertFalse(result, result.contains("order by id;"));
-		Assert.assertFalse(result, result.contains(";) tempCountTable_"));
+		Assert.assertFalse(result.contains("order by id;"));
+		Assert.assertFalse(result.contains(";) tempCountTable_"));
 	}
 
 	@Test
@@ -378,9 +378,7 @@ public class UpgradeLogProgressTrackerTest {
 				Map<String, Long> lastKnownProgresses =
 					UpgradeLogProgressTracker.getLastKnownProgresses();
 
-				Assert.assertTrue(
-					lastKnownProgresses.toString(),
-					lastKnownProgresses.isEmpty());
+				Assert.assertTrue(lastKnownProgresses.isEmpty());
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();
@@ -502,7 +500,6 @@ public class UpgradeLogProgressTrackerTest {
 						UpgradeSQLRecorder.getFailedSQLs()) {
 
 					Assert.assertFalse(
-						failedSQL.toString(),
 						failedSQL.getSQL(
 						).contains(
 							"select count(1)"
@@ -513,7 +510,6 @@ public class UpgradeLogProgressTrackerTest {
 						UpgradeSQLRecorder.getRunningSQLs()) {
 
 					Assert.assertFalse(
-						runningSQL.toString(),
 						runningSQL.getSQL(
 						).contains(
 							"select count(1)"
