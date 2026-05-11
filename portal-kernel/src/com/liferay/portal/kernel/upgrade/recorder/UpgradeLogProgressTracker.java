@@ -294,6 +294,8 @@ public class UpgradeLogProgressTracker {
 			countPreparedStatement.setQueryTimeout(
 				_COUNT_QUERY_TIMEOUT_SECONDS);
 
+			_setCancelQueryTimeoutIfSupported(countPreparedStatement);
+
 			try (ResultSet resultSet = countPreparedStatement.executeQuery()) {
 				if (resultSet.next()) {
 					return resultSet.getLong(1);
@@ -307,6 +309,22 @@ public class UpgradeLogProgressTracker {
 		}
 
 		return null;
+	}
+
+	private static void _setCancelQueryTimeoutIfSupported(
+		PreparedStatement preparedStatement) {
+
+		try {
+			Method method = preparedStatement.getClass(
+			).getMethod(
+				"setCancelQueryTimeout", int.class
+			);
+
+			method.invoke(
+				preparedStatement, _COUNT_CANCEL_QUERY_TIMEOUT_SECONDS);
+		}
+		catch (Throwable throwable) {
+		}
 	}
 
 	private static String _stripOrderBy(String sql, String lowerSQL) {
@@ -363,6 +381,8 @@ public class UpgradeLogProgressTracker {
 				resultSet, statementProxy, upgradeProcessClassName,
 				resultSetInvocationHandlers, totalRowCount));
 	}
+
+	private static final int _COUNT_CANCEL_QUERY_TIMEOUT_SECONDS = 5;
 
 	private static final int _COUNT_QUERY_TIMEOUT_SECONDS = 10;
 
