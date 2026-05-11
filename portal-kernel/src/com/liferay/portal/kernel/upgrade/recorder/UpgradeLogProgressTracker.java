@@ -280,12 +280,8 @@ public class UpgradeLogProgressTracker {
 		try (SafeCloseable safeCloseable =
 				UpgradeSQLRecorder.suppressRecording()) {
 
-			try {
-				countPreparedStatement.setQueryTimeout(
-					_COUNT_QUERY_TIMEOUT_SECONDS);
-			}
-			catch (Throwable throwable) {
-			}
+			countPreparedStatement.setQueryTimeout(
+				_COUNT_QUERY_TIMEOUT_SECONDS);
 
 			try (ResultSet resultSet = countPreparedStatement.executeQuery()) {
 				if (resultSet.next()) {
