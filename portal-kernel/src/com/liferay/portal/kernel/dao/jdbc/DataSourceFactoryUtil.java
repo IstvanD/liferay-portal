@@ -350,6 +350,75 @@ public class DataSourceFactoryUtil {
 		}
 	}
 
+	private static String _rewriteDB2JDBCURL(String url) {
+		int hostStart = url.indexOf("://") + "://".length();
+
+		int pathStart = url.indexOf(CharPool.SLASH, hostStart);
+
+		if (pathStart == -1) {
+			return url;
+		}
+
+		int propertyStart = url.indexOf(CharPool.COLON, pathStart);
+
+		Map<String, String> existingProperties = new TreeMap<>();
+
+		String baseURL = url;
+
+		if (propertyStart != -1) {
+			baseURL = url.substring(0, propertyStart);
+
+			String propertyString = url.substring(propertyStart + 1);
+
+			for (String parameter :
+					StringUtil.split(propertyString, CharPool.SEMICOLON)) {
+
+				if (parameter.isEmpty()) {
+					continue;
+				}
+
+				String[] parts = StringUtil.split(parameter, CharPool.EQUAL);
+
+				if (parts.length == 2) {
+					existingProperties.put(parts[0], parts[1]);
+				}
+				else {
+					existingProperties.put(
+						parameter, _MALFORMED_PARAMETER_PLACE_HOLDER);
+				}
+			}
+		}
+
+		existingProperties.putIfAbsent(
+			"queryTimeoutInterruptProcessingMode", "1");
+
+		StringBundler sb = new StringBundler();
+
+		sb.append(baseURL);
+		sb.append(CharPool.COLON);
+
+		for (Map.Entry<String, String> entry : existingProperties.entrySet()) {
+			sb.append(entry.getKey());
+
+			if (!_MALFORMED_PARAMETER_PLACE_HOLDER.equals(entry.getValue())) {
+				sb.append(CharPool.EQUAL);
+				sb.append(entry.getValue());
+			}
+
+			sb.append(CharPool.SEMICOLON);
+		}
+
+		String newURL = sb.toString();
+
+		if (!Objects.equals(url, newURL) && _log.isInfoEnabled()) {
+			_log.info(
+				StringBundler.concat(
+					"Rewrote JDBC URL from ", url, " to ", newURL));
+		}
+
+		return newURL;
+	}
+
 	private static String _rewriteJDBCURL(
 		Map<String, String> defaultParameters, char parameterDelimiter,
 		String url, char urlDelimiter) {
@@ -358,7 +427,8 @@ public class DataSourceFactoryUtil {
 
 		String baseURL = url;
 
-		int index = url.indexOf(urlDelimiter, url.indexOf("://") + 3);
+		int index = url.indexOf(
+			urlDelimiter, url.indexOf("://") + "://".length());
 
 		if (index != -1) {
 			baseURL = url.substring(0, index);
@@ -432,6 +502,10 @@ public class DataSourceFactoryUtil {
 	}
 
 	private static String _rewriteJDBCURL(String url) {
+		if (url.startsWith("jdbc:db2://")) {
+			return _rewriteDB2JDBCURL(url);
+		}
+
 		if (url.startsWith("jdbc:mariadb://") ||
 			url.startsWith("jdbc:mysql://")) {
 
