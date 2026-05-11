@@ -6,6 +6,7 @@
 package com.liferay.portal.kernel.upgrade.recorder;
 
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
@@ -248,7 +249,17 @@ public class UpgradeLogProgressTracker {
 	private static boolean _isSelect(String lowerSQL) {
 		String trimmed = lowerSQL.stripLeading();
 
-		if (trimmed.startsWith("select ") || trimmed.startsWith("select(")) {
+		if (!trimmed.startsWith("select") ||
+			(trimmed.length() == "select".length())) {
+
+			return false;
+		}
+
+		char nextChar = trimmed.charAt("select".length());
+
+		if (Character.isWhitespace(nextChar) ||
+			(nextChar == CharPool.OPEN_PARENTHESIS)) {
+
 			return true;
 		}
 
