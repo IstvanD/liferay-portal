@@ -1090,6 +1090,37 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
+	public void testSafeSetObjectWithScalarMirrors() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					_SELECT_WITH_PARAMETER_SQL);
+
+				PreparedStatement countPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				Long value = RandomTestUtil.randomLong();
+
+				wrappedPreparedStatement.setObject(1, value);
+
+				Mockito.verify(
+					countPreparedStatement
+				).setObject(
+					1, value
+				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
 	public void testStartClearsRegistry() throws Exception {
 		try (SafeCloseable safeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
@@ -1224,6 +1255,52 @@ public class UpgradeLogProgressTrackerTest {
 				).setQueryTimeout(
 					Mockito.anyInt()
 				);
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
+	public void testUnsafeSetObjectWithStreamSkipsCount() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					_SELECT_WITH_PARAMETER_SQL);
+
+				PreparedStatement countPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				InputStream inputStream = new ByteArrayInputStream(
+					new byte[] {1, 2});
+
+				wrappedPreparedStatement.setObject(1, inputStream);
+
+				Mockito.verify(
+					countPreparedStatement, Mockito.never()
+				).setObject(
+					Mockito.anyInt(), Mockito.any()
+				);
+
+				ResultSet resultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				wrappedPreparedStatement.executeQuery();
+
+				Mockito.verify(
+					countPreparedStatement, Mockito.never()
+				).executeQuery();
 			}
 			finally {
 				UpgradeLogProgressTracker.stop();

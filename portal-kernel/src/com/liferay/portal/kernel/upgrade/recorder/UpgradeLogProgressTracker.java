@@ -21,15 +21,22 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.io.InputStream;
+import java.io.Reader;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import java.sql.Blob;
 import java.sql.CallableStatement;
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLXML;
 import java.sql.Statement;
 
 import java.util.Arrays;
@@ -266,6 +273,29 @@ public class UpgradeLogProgressTracker {
 		return false;
 	}
 
+	private static boolean _isUnsafeSetter(String methodName, Object[] args) {
+		if (_unsafeSetters.contains(methodName)) {
+			return true;
+		}
+
+		if (!Objects.equals(methodName, "setObject") ||
+			ArrayUtil.isEmpty(args) || (args.length < 2)) {
+
+			return false;
+		}
+
+		Object value = args[1];
+
+		if (value instanceof Blob || value instanceof Clob ||
+			value instanceof InputStream || value instanceof NClob ||
+			value instanceof Reader || value instanceof SQLXML) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private static PreparedStatement _prepareCountStatement(
 		Connection connection, String sql) {
 
@@ -395,11 +425,11 @@ public class UpgradeLogProgressTracker {
 		new ConcurrentHashMap<>();
 	private static final Map<String, Long> _lastKnownTotalCounts =
 		new ConcurrentHashMap<>();
-	private static final Set<String> _safeSetters = new HashSet<>(
+	private static final Set<String> _unsafeSetters = new HashSet<>(
 		Arrays.asList(
-			"setBigDecimal", "setBoolean", "setByte", "setBytes", "setDate",
-			"setDouble", "setFloat", "setInt", "setLong", "setNString",
-			"setNull", "setShort", "setString", "setTime", "setTimestamp"));
+			"setAsciiStream", "setBinaryStream", "setBlob",
+			"setCharacterStream", "setClob", "setNCharacterStream", "setNClob",
+			"setSQLXML", "setUnicodeStream"));
 
 	private static class ResultSetInvocationHandler
 		implements InvocationHandler {
@@ -558,16 +588,16 @@ public class UpgradeLogProgressTracker {
 						return result;
 					}
 
-					if (_safeSetters.contains(methodName)) {
+					if (_isUnsafeSetter(methodName, args)) {
+						_hasUnsafeBinding = true;
+					}
+					else {
 						try {
 							method.invoke(_countPreparedStatement, args);
 						}
 						catch (Throwable throwable) {
 							_cleanUpCountStatement(throwable);
 						}
-					}
-					else {
-						_hasUnsafeBinding = true;
 					}
 
 					return result;
