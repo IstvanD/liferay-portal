@@ -641,22 +641,22 @@ public class UpgradeLogProgressTracker {
 		}
 
 		private Long _runCountForSQL(String sql) {
+			Long totalRowCount = null;
+
 			try (PreparedStatement countPreparedStatement =
 					_prepareCountStatement(_underlyingConnection, sql)) {
 
-				if (countPreparedStatement == null) {
-					return null;
+				if (countPreparedStatement != null) {
+					totalRowCount = _runCount(countPreparedStatement);
 				}
-
-				return _runCount(countPreparedStatement);
 			}
 			catch (SQLException sqlException) {
 				if (_log.isDebugEnabled()) {
 					_log.debug("Failed to close count statement", sqlException);
 				}
-
-				return null;
 			}
+
+			return totalRowCount;
 		}
 
 		private PreparedStatement _countPreparedStatement;
