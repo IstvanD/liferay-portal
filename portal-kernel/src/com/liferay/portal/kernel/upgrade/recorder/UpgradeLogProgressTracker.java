@@ -32,15 +32,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -349,7 +349,8 @@ public class UpgradeLogProgressTracker {
 
 	private static ResultSet _wrap(
 		ResultSet resultSet, Statement statementProxy,
-		String upgradeProcessClassName, Long totalRowCount) {
+		String upgradeProcessClassName, Long totalRowCount,
+		Queue<ResultSetInvocationHandler> resultSetInvocationHandlers) {
 
 		if (resultSet == null) {
 			return null;
@@ -360,7 +361,7 @@ public class UpgradeLogProgressTracker {
 			new Class<?>[] {ResultSet.class},
 			new ResultSetInvocationHandler(
 				resultSet, statementProxy, upgradeProcessClassName,
-				totalRowCount));
+				resultSetInvocationHandlers, totalRowCount));
 	}
 
 	private static final int _COUNT_QUERY_TIMEOUT_SECONDS = 10;
@@ -444,6 +445,8 @@ public class UpgradeLogProgressTracker {
 			}
 			else if (Objects.equals(methodName, "close")) {
 				_cleanUpRegistry();
+
+				_resultSetInvocationHandlers.remove(this);
 			}
 
 			return result;
@@ -451,10 +454,13 @@ public class UpgradeLogProgressTracker {
 
 		private ResultSetInvocationHandler(
 			ResultSet resultSet, Statement statementProxy,
-			String upgradeProcessClassName, Long totalRowCount) {
+			String upgradeProcessClassName,
+			Queue<ResultSetInvocationHandler> resultSetInvocationHandlers,
+			Long totalRowCount) {
 
 			_resultSet = resultSet;
 			_statementProxy = statementProxy;
+			_resultSetInvocationHandlers = resultSetInvocationHandlers;
 			_totalRowCount = GetterUtil.getLong(totalRowCount);
 
 			long handlerId = _handlerCounter.incrementAndGet();
@@ -486,6 +492,8 @@ public class UpgradeLogProgressTracker {
 		private long _lastLogTime;
 		private final String _registryKey;
 		private final ResultSet _resultSet;
+		private final Queue<ResultSetInvocationHandler>
+			_resultSetInvocationHandlers;
 		private long _rowCount;
 		private final Statement _statementProxy;
 		private final long _totalRowCount;
@@ -628,7 +636,8 @@ public class UpgradeLogProgressTracker {
 			if (result instanceof ResultSet) {
 				ResultSet wrappedResultSet = _wrap(
 					(ResultSet)result, (Statement)proxy,
-					_upgradeProcessClassName, totalRowCount);
+					_upgradeProcessClassName, totalRowCount,
+					_resultSetInvocationHandlers);
 
 				_resultSetInvocationHandlers.add(
 					(ResultSetInvocationHandler)ProxyUtil.getInvocationHandler(
@@ -661,8 +670,8 @@ public class UpgradeLogProgressTracker {
 
 		private PreparedStatement _countPreparedStatement;
 		private boolean _hasUnsafeBinding;
-		private final List<ResultSetInvocationHandler>
-			_resultSetInvocationHandlers = new ArrayList<>();
+		private final Queue<ResultSetInvocationHandler>
+			_resultSetInvocationHandlers = new ConcurrentLinkedQueue<>();
 		private final Statement _statement;
 		private final Connection _underlyingConnection;
 		private final String _upgradeProcessClassName;
