@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * @author István András Dézsi
@@ -397,8 +398,9 @@ public class UpgradeLogProgressTracker {
 
 	private static ResultSet _wrap(
 		ResultSet resultSet, Statement statementProxy,
-		String upgradeProcessClassName, Long totalRowCount,
-		Queue<ResultSetInvocationHandler> resultSetInvocationHandlers) {
+		String upgradeProcessClassName,
+		Queue<ResultSetInvocationHandler> resultSetInvocationHandlers,
+		Supplier<Long> totalRowCountSupplier) {
 
 		if (resultSet == null) {
 			return null;
@@ -409,7 +411,7 @@ public class UpgradeLogProgressTracker {
 			new Class<?>[] {ResultSet.class},
 			new ResultSetInvocationHandler(
 				resultSet, statementProxy, upgradeProcessClassName,
-				resultSetInvocationHandlers, totalRowCount));
+				resultSetInvocationHandlers, totalRowCountSupplier));
 	}
 
 	private static final int _COUNT_CANCEL_QUERY_TIMEOUT_SECONDS = 5;
@@ -463,6 +465,14 @@ public class UpgradeLogProgressTracker {
 				if ((now - _lastLogTime) >
 						PropsValues.UPGRADE_LOG_PROGRESS_INTERVAL) {
 
+					if (!_totalRowCountComputed &&
+						(_totalRowCountSupplier != null)) {
+
+						_totalRowCount = GetterUtil.getLong(
+							_totalRowCountSupplier.get());
+						_totalRowCountComputed = true;
+					}
+
 					_lastKnownProgresses.put(_registryKey, _rowCount);
 
 					if (_totalRowCount > 0) {
@@ -506,12 +516,12 @@ public class UpgradeLogProgressTracker {
 			ResultSet resultSet, Statement statementProxy,
 			String upgradeProcessClassName,
 			Queue<ResultSetInvocationHandler> resultSetInvocationHandlers,
-			Long totalRowCount) {
+			Supplier<Long> totalRowCountSupplier) {
 
 			_resultSet = resultSet;
 			_statementProxy = statementProxy;
 			_resultSetInvocationHandlers = resultSetInvocationHandlers;
-			_totalRowCount = GetterUtil.getLong(totalRowCount);
+			_totalRowCountSupplier = totalRowCountSupplier;
 
 			long handlerId = _handlerCounter.incrementAndGet();
 
@@ -546,7 +556,9 @@ public class UpgradeLogProgressTracker {
 			_resultSetInvocationHandlers;
 		private long _rowCount;
 		private final Statement _statementProxy;
-		private final long _totalRowCount;
+		private long _totalRowCount;
+		private boolean _totalRowCountComputed;
+		private final Supplier<Long> _totalRowCountSupplier;
 
 	}
 
@@ -606,21 +618,30 @@ public class UpgradeLogProgressTracker {
 
 			if (Objects.equals(methodName, "executeQuery")) {
 				if (ArrayUtil.isEmpty(args)) {
-					Long totalRowCount = null;
+					Supplier<Long> totalRowCountSupplier = null;
 
 					if ((_countPreparedStatement != null) &&
 						!_hasUnsafeBinding) {
 
-						totalRowCount = _runCount(_countPreparedStatement);
+						PreparedStatement countPreparedStatement =
+							_countPreparedStatement;
+
+						totalRowCountSupplier = () -> _runCount(
+							countPreparedStatement);
 					}
 
-					return _delegateAndWrap(proxy, method, args, totalRowCount);
+					return _delegateAndWrap(
+						proxy, method, args, totalRowCountSupplier);
 				}
 
 				if ((args.length == 1) && (args[0] instanceof String)) {
-					Long totalRowCount = _runCountForSQL((String)args[0]);
+					String sql = (String)args[0];
 
-					return _delegateAndWrap(proxy, method, args, totalRowCount);
+					Supplier<Long> totalRowCountSupplier =
+						() -> _runCountForSQL(sql);
+
+					return _delegateAndWrap(
+						proxy, method, args, totalRowCountSupplier);
 				}
 			}
 
@@ -678,7 +699,8 @@ public class UpgradeLogProgressTracker {
 		}
 
 		private Object _delegateAndWrap(
-				Object proxy, Method method, Object[] args, Long totalRowCount)
+				Object proxy, Method method, Object[] args,
+				Supplier<Long> totalRowCountSupplier)
 			throws Throwable {
 
 			Object result = _delegate(method, args);
@@ -686,8 +708,8 @@ public class UpgradeLogProgressTracker {
 			if (result instanceof ResultSet) {
 				ResultSet wrappedResultSet = _wrap(
 					(ResultSet)result, (Statement)proxy,
-					_upgradeProcessClassName, totalRowCount,
-					_resultSetInvocationHandlers);
+					_upgradeProcessClassName, _resultSetInvocationHandlers,
+					totalRowCountSupplier);
 
 				_resultSetInvocationHandlers.add(
 					(ResultSetInvocationHandler)ProxyUtil.getInvocationHandler(

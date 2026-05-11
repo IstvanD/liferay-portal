@@ -137,7 +137,10 @@ public class UpgradeLogProgressTrackerTest {
 	public void testClearParametersResetsUnsafeFlag() throws Exception {
 		try (SafeCloseable enabledSafeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
-					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
 
 			UpgradeLogProgressTracker.start();
 
@@ -183,7 +186,7 @@ public class UpgradeLogProgressTrackerTest {
 					Mockito.eq(1), Mockito.anyInt()
 				);
 
-				ResultSet resultSet = Mockito.mock(ResultSet.class);
+				ResultSet resultSet = _mockResultSet();
 
 				Mockito.when(
 					wrappedPreparedStatement.executeQuery()
@@ -191,7 +194,14 @@ public class UpgradeLogProgressTrackerTest {
 					resultSet
 				);
 
-				wrappedPreparedStatement.executeQuery();
+				ResultSet wrappedResultSet =
+					wrappedPreparedStatement.executeQuery();
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				wrappedResultSet.next();
 
 				Mockito.verify(
 					countPreparedStatement, Mockito.atLeastOnce()
@@ -374,7 +384,10 @@ public class UpgradeLogProgressTrackerTest {
 	public void testCountQueryAppliesTenSecondTimeout() throws Exception {
 		try (SafeCloseable enabledSafeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(
-					"UPGRADE_LOG_PROGRESS_ENABLED", true)) {
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
 
 			UpgradeLogProgressTracker.start();
 
@@ -393,7 +406,7 @@ public class UpgradeLogProgressTrackerTest {
 					countResultSet
 				);
 
-				ResultSet resultSet = Mockito.mock(ResultSet.class);
+				ResultSet resultSet = _mockResultSet();
 
 				Mockito.when(
 					wrappedPreparedStatement.executeQuery()
@@ -401,7 +414,14 @@ public class UpgradeLogProgressTrackerTest {
 					resultSet
 				);
 
-				wrappedPreparedStatement.executeQuery();
+				ResultSet wrappedResultSet =
+					wrappedPreparedStatement.executeQuery();
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+
+				wrappedResultSet.next();
 
 				Mockito.verify(
 					countPreparedStatement, Mockito.atLeastOnce()
