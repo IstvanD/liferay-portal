@@ -449,10 +449,10 @@ public class DataSourceFactoryUtil {
 
 	private static String _rewriteJDBCURL(String url) {
 		if (url.startsWith("jdbc:db2://")) {
-			int pathStart = url.indexOf(
+			int index = url.indexOf(
 				CharPool.SLASH, url.indexOf("://") + "://".length());
 
-			if (pathStart == -1) {
+			if (index == -1) {
 				return url;
 			}
 
@@ -460,7 +460,7 @@ public class DataSourceFactoryUtil {
 				HashMapBuilder.put(
 					"queryTimeoutInterruptProcessingMode", "1"
 				).build(),
-				true, CharPool.SEMICOLON, pathStart, url, CharPool.COLON);
+				true, CharPool.SEMICOLON, index, url, CharPool.COLON);
 		}
 
 		if (url.startsWith("jdbc:mariadb://") ||

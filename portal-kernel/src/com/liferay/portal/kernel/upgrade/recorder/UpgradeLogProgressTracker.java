@@ -245,7 +245,7 @@ public class UpgradeLogProgressTracker {
 			return null;
 		}
 
-		String stripped = StringUtil.trimTrailing(_stripOrderBy(sql, lowerSQL));
+		String stripped = StringUtil.trimTrailing(_stripOrderBy(lowerSQL, sql));
 
 		if (stripped.endsWith(StringPool.SEMICOLON)) {
 			stripped = StringUtil.trimTrailing(
@@ -367,7 +367,7 @@ public class UpgradeLogProgressTracker {
 		}
 	}
 
-	private static String _stripOrderBy(String sql, String lowerSQL) {
+	private static String _stripOrderBy(String lowerSQL, String sql) {
 		try {
 			if (DBManagerUtil.getDBType() != DBType.SQLSERVER) {
 				return sql;
@@ -571,7 +571,7 @@ public class UpgradeLogProgressTracker {
 				_lastKnownTotalCounts.remove(_registryKey);
 
 				if (_log.isInfoEnabled()) {
-					_log.info(_registryKey + " finished.");
+					_log.info(_registryKey + " is finished.");
 				}
 			}
 		}

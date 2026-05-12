@@ -289,7 +289,7 @@ public class UpgradeLogProgressTrackerTest {
 				Mockito.verify(
 					log, Mockito.times(1)
 				).info(
-					registryKey + " finished."
+					registryKey + " is finished."
 				);
 			}
 			finally {
