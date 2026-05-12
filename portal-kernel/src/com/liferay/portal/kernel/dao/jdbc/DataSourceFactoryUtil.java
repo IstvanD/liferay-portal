@@ -354,11 +354,11 @@ public class DataSourceFactoryUtil {
 		Map<String, String> defaultParameters, char parameterDelimiter,
 		String url, char urlDelimiter) {
 
-		boolean trailingDelimiter = url.startsWith("jdbc:db2://");
+		boolean db2 = url.startsWith("jdbc:db2://");
 
 		int searchFrom = url.indexOf("://") + "://".length();
 
-		if (trailingDelimiter) {
+		if (db2) {
 			int pathStart = url.indexOf(CharPool.SLASH, searchFrom);
 
 			if (pathStart == -1) {
@@ -435,7 +435,7 @@ public class DataSourceFactoryUtil {
 				sb.append(parameterDelimiter);
 			}
 
-			if (!trailingDelimiter) {
+			if (!db2) {
 				sb.setIndex(sb.index() - 1);
 			}
 
