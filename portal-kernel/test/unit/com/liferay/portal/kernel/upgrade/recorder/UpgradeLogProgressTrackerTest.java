@@ -811,6 +811,87 @@ public class UpgradeLogProgressTrackerTest {
 	}
 
 	@Test
+	public void testNextDropsTotalWhenRowCountExceedsIt() throws Exception {
+		try (SafeCloseable enabledSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_ENABLED", true);
+			SafeCloseable intervalSafeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_LOG_PROGRESS_INTERVAL", 1L)) {
+
+			Log log = _getLog();
+
+			UpgradeLogProgressTracker.start();
+
+			try {
+				PreparedStatement[] statements = _setUpPreparedMirror(
+					_SELECT_SQL);
+
+				PreparedStatement countPreparedStatement = statements[0];
+				PreparedStatement wrappedPreparedStatement = statements[1];
+
+				ResultSet countResultSet = Mockito.mock(ResultSet.class);
+
+				Mockito.when(
+					countPreparedStatement.executeQuery()
+				).thenReturn(
+					countResultSet
+				);
+
+				Mockito.when(
+					countResultSet.next()
+				).thenReturn(
+					true
+				);
+
+				Mockito.when(
+					countResultSet.getLong(1)
+				).thenReturn(
+					10L
+				);
+
+				ResultSet resultSet = _mockResultSet();
+
+				Mockito.when(
+					wrappedPreparedStatement.executeQuery()
+				).thenReturn(
+					resultSet
+				);
+
+				ResultSet wrappedResultSet =
+					wrappedPreparedStatement.executeQuery();
+
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_lastLogTime", 0L);
+				ReflectionTestUtil.setFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_rowCount", 20L);
+
+				Assert.assertTrue(wrappedResultSet.next());
+
+				String registryKey = ReflectionTestUtil.getFieldValue(
+					ProxyUtil.getInvocationHandler(wrappedResultSet),
+					"_registryKey");
+
+				Mockito.verify(
+					log
+				).info(
+					registryKey + " is still executing. Processed 21 rows."
+				);
+
+				Map<String, Long> lastKnownTotalCounts =
+					UpgradeLogProgressTracker.getLastKnownTotalCounts();
+
+				Assert.assertNull(lastKnownTotalCounts.get(registryKey));
+			}
+			finally {
+				UpgradeLogProgressTracker.stop();
+			}
+		}
+	}
+
+	@Test
 	public void testNextLogReachesLogger() throws Exception {
 		try (SafeCloseable enabledSafeCloseable =
 				PropsValuesTestUtil.swapWithSafeCloseable(

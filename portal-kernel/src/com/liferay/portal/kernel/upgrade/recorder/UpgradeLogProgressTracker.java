@@ -482,6 +482,11 @@ public class UpgradeLogProgressTracker {
 						_totalRowCountComputed = true;
 					}
 
+					if ((_totalRowCount > 0) && (_rowCount > _totalRowCount)) {
+						_totalRowCount = 0;
+						_lastKnownTotalCounts.remove(_registryKey);
+					}
+
 					_lastKnownProgresses.put(_registryKey, _rowCount);
 
 					if (_totalRowCount > 0) {
