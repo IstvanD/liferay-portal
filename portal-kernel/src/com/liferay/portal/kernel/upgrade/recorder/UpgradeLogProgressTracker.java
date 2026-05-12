@@ -9,6 +9,9 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.jdbc.util.ConnectionWrapper;
 import com.liferay.portal.kernel.log.Log;
@@ -346,6 +349,12 @@ public class UpgradeLogProgressTracker {
 		PreparedStatement preparedStatement) {
 
 		try {
+			DB db = DBManagerUtil.getDB();
+
+			if ((db == null) || (db.getDBType() != DBType.SQLSERVER)) {
+				return;
+			}
+
 			Method method = preparedStatement.getClass(
 			).getMethod(
 				"setCancelQueryTimeout", int.class
@@ -354,7 +363,10 @@ public class UpgradeLogProgressTracker {
 			method.invoke(
 				preparedStatement, _COUNT_CANCEL_QUERY_TIMEOUT_SECONDS);
 		}
-		catch (Throwable throwable) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to set cancel query timeout", exception);
+			}
 		}
 	}
 
