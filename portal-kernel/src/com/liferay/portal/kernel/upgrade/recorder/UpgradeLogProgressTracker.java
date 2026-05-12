@@ -368,6 +368,19 @@ public class UpgradeLogProgressTracker {
 	}
 
 	private static String _stripOrderBy(String sql, String lowerSQL) {
+		try {
+			if (DBManagerUtil.getDBType() != DBType.SQLSERVER) {
+				return sql;
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to determine DB type", exception);
+			}
+
+			return sql;
+		}
+
 		int index = lowerSQL.lastIndexOf(" order by ");
 
 		if (index < 0) {

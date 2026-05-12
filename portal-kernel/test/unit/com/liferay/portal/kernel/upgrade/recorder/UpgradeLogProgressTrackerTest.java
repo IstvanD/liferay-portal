@@ -7,6 +7,8 @@ package com.liferay.portal.kernel.upgrade.recorder;
 
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
@@ -120,17 +122,46 @@ public class UpgradeLogProgressTrackerTest {
 
 		String result = _invokeBuildCountSQL("select * from Foo order by id");
 
-		String lowerResult = StringUtil.toLowerCase(result);
-
-		Assert.assertFalse(lowerResult.contains("order by id"));
-
 		Assert.assertTrue(result.contains("tempCountTable_"));
+		Assert.assertTrue(
+			StringUtil.toLowerCase(
+				result
+			).contains(
+				"order by id"
+			));
 
-		String resultWithSemicolon = _invokeBuildCountSQL(
-			"select * from Foo order by id;");
+		String resultWithSemicolon = _invokeBuildCountSQL("select * from Foo;");
 
-		Assert.assertFalse(resultWithSemicolon.contains("order by id;"));
 		Assert.assertFalse(resultWithSemicolon.contains(";) tempCountTable_"));
+	}
+
+	@Test
+	public void testBuildCountSQLStripsOrderByOnSQLServer() throws Exception {
+		try (MockedStatic<DBManagerUtil> dbManagerUtilMockedStatic =
+				Mockito.mockStatic(DBManagerUtil.class)) {
+
+			dbManagerUtilMockedStatic.when(
+				DBManagerUtil::getDBType
+			).thenReturn(
+				DBType.SQLSERVER
+			);
+
+			String result = _invokeBuildCountSQL(
+				"select * from Foo order by id");
+
+			Assert.assertTrue(result.contains("tempCountTable_"));
+			Assert.assertFalse(
+				StringUtil.toLowerCase(
+					result
+				).contains(
+					"order by id"
+				));
+
+			String resultWithSemicolon = _invokeBuildCountSQL(
+				"select * from Foo order by id;");
+
+			Assert.assertFalse(resultWithSemicolon.contains("order by id;"));
+		}
 	}
 
 	@Test
