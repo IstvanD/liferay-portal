@@ -354,19 +354,15 @@ public class DataSourceFactoryUtil {
 		Map<String, String> defaultParameters, char parameterDelimiter,
 		String url, char urlDelimiter) {
 
-		boolean db2 = url.startsWith("jdbc:db2://");
+		return _rewriteJDBCURL(
+			defaultParameters, parameterDelimiter, url, urlDelimiter,
+			url.indexOf("://") + "://".length(), false);
+	}
 
-		int searchFrom = url.indexOf("://") + "://".length();
-
-		if (db2) {
-			int pathStart = url.indexOf(CharPool.SLASH, searchFrom);
-
-			if (pathStart == -1) {
-				return url;
-			}
-
-			searchFrom = pathStart;
-		}
+	private static String _rewriteJDBCURL(
+		Map<String, String> defaultParameters, char parameterDelimiter,
+		String url, char urlDelimiter, int searchFrom,
+		boolean keepTrailingDelimiter) {
 
 		Map<String, String> existingParameters = new TreeMap<>();
 
@@ -435,7 +431,7 @@ public class DataSourceFactoryUtil {
 				sb.append(parameterDelimiter);
 			}
 
-			if (!db2) {
+			if (!keepTrailingDelimiter) {
 				sb.setIndex(sb.index() - 1);
 			}
 
@@ -453,11 +449,18 @@ public class DataSourceFactoryUtil {
 
 	private static String _rewriteJDBCURL(String url) {
 		if (url.startsWith("jdbc:db2://")) {
+			int pathStart = url.indexOf(
+				CharPool.SLASH, url.indexOf("://") + "://".length());
+
+			if (pathStart == -1) {
+				return url;
+			}
+
 			return _rewriteJDBCURL(
 				HashMapBuilder.put(
 					"queryTimeoutInterruptProcessingMode", "1"
 				).build(),
-				CharPool.SEMICOLON, url, CharPool.COLON);
+				CharPool.SEMICOLON, url, CharPool.COLON, pathStart, true);
 		}
 
 		if (url.startsWith("jdbc:mariadb://") ||
