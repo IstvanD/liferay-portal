@@ -406,10 +406,10 @@ public class UpgradeLogProgressTracker {
 	}
 
 	private static ResultSet _wrap(
-		ResultSet resultSet, Statement statementProxy,
-		String upgradeProcessClassName,
+		ResultSet resultSet,
 		Queue<ResultSetInvocationHandler> resultSetInvocationHandlers,
-		Supplier<Long> totalRowCountSupplier) {
+		Statement statementProxy, Supplier<Long> totalRowCountSupplier,
+		String upgradeProcessClassName) {
 
 		if (resultSet == null) {
 			return null;
@@ -419,8 +419,8 @@ public class UpgradeLogProgressTracker {
 			UpgradeLogProgressTracker.class.getClassLoader(),
 			new Class<?>[] {ResultSet.class},
 			new ResultSetInvocationHandler(
-				resultSet, statementProxy, upgradeProcessClassName,
-				resultSetInvocationHandlers, totalRowCountSupplier));
+				resultSet, resultSetInvocationHandlers, statementProxy,
+				totalRowCountSupplier, upgradeProcessClassName));
 	}
 
 	private static final int _COUNT_CANCEL_QUERY_TIMEOUT_SECONDS = 5;
@@ -527,14 +527,14 @@ public class UpgradeLogProgressTracker {
 		}
 
 		private ResultSetInvocationHandler(
-			ResultSet resultSet, Statement statementProxy,
-			String upgradeProcessClassName,
+			ResultSet resultSet,
 			Queue<ResultSetInvocationHandler> resultSetInvocationHandlers,
-			Supplier<Long> totalRowCountSupplier) {
+			Statement statementProxy, Supplier<Long> totalRowCountSupplier,
+			String upgradeProcessClassName) {
 
 			_resultSet = resultSet;
-			_statementProxy = statementProxy;
 			_resultSetInvocationHandlers = resultSetInvocationHandlers;
+			_statementProxy = statementProxy;
 			_totalRowCountSupplier = totalRowCountSupplier;
 
 			long handlerId = _handlerCounter.incrementAndGet();
@@ -721,9 +721,9 @@ public class UpgradeLogProgressTracker {
 
 			if (result instanceof ResultSet) {
 				ResultSet wrappedResultSet = _wrap(
-					(ResultSet)result, (Statement)proxy,
-					_upgradeProcessClassName, _resultSetInvocationHandlers,
-					totalRowCountSupplier);
+					(ResultSet)result, _resultSetInvocationHandlers,
+					(Statement)proxy, totalRowCountSupplier,
+					_upgradeProcessClassName);
 
 				_resultSetInvocationHandlers.add(
 					(ResultSetInvocationHandler)ProxyUtil.getInvocationHandler(
