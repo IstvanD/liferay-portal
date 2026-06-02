@@ -150,6 +150,7 @@ import java.net.UnknownHostException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -950,7 +951,18 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 	 */
 	@Override
 	public List<Company> getCompanies() {
-		return companyPersistence.findAll();
+		if (!DBPartitionUtil.isCurrentCompanyRestricted()) {
+			return companyPersistence.findAll();
+		}
+
+		Company company = companyPersistence.fetchByPrimaryKey(
+			CompanyThreadLocal.getCompanyId());
+
+		if (company == null) {
+			return Collections.emptyList();
+		}
+
+		return Collections.singletonList(company);
 	}
 
 	/**

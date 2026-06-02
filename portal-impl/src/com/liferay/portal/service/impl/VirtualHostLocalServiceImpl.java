@@ -7,6 +7,7 @@ package com.liferay.portal.service.impl;
 
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.AvailableLocaleException;
@@ -136,6 +137,12 @@ public class VirtualHostLocalServiceImpl
 
 	@Override
 	public List<VirtualHost> getVirtualHosts(long companyId) {
+		if (DBPartitionUtil.isCurrentCompanyRestricted() &&
+			(companyId != CompanyThreadLocal.getCompanyId())) {
+
+			return Collections.emptyList();
+		}
+
 		return virtualHostPersistence.findByCompanyId(companyId);
 	}
 
