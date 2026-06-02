@@ -486,6 +486,56 @@ public class CompanyLocalServiceDBPartitionTest
 		}
 	}
 
+	@Test
+	public void testCompanyNotVisibleAcrossSecondaryInstances()
+		throws Exception {
+
+		_company1 = CompanyTestUtil.addCompany();
+		_company2 = CompanyTestUtil.addCompany();
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company1.getCompanyId())) {
+
+			List<Company> companies = _companyLocalService.getCompanies();
+
+			Assert.assertFalse(companies.contains(_company2));
+			Assert.assertTrue(companies.contains(_company1));
+		}
+	}
+
+	@Test
+	public void testCompanyResolvableByVirtualHostAfterNegativeLookup()
+		throws Exception {
+
+		String webId =
+			StringUtil.toLowerCase(RandomTestUtil.randomString()) + ".com";
+
+		Assert.assertNull(
+			_companyLocalService.fetchCompanyByVirtualHost(webId));
+
+		_company1 = CompanyTestUtil.addCompanyWithWebId(webId);
+
+		Assert.assertNotNull(
+			_companyLocalService.fetchCompanyByVirtualHost(webId));
+	}
+
+	@Test
+	public void testCompanyViewFiltersPeerCompanies() throws Exception {
+		_company1 = CompanyTestUtil.addCompany();
+		_company2 = CompanyTestUtil.addCompany();
+
+		String partitionName = CompanyLocalServiceTestUtil.getPartitionName(
+			_company1.getCompanyId());
+
+		Assert.assertFalse(
+			_isCompanyIdInView(
+				partitionName, "Company", _company2.getCompanyId()));
+		Assert.assertTrue(
+			_isCompanyIdInView(
+				partitionName, "Company", _company1.getCompanyId()));
+	}
+
 	@FeatureFlag("LPD-11342")
 	@Test
 	public void testCopyDBPartitionCompany() throws Exception {
@@ -809,6 +859,62 @@ public class CompanyLocalServiceDBPartitionTest
 		}
 	}
 
+	@Test
+	public void testGetCompanyIdsScopedToSecondaryInstance() throws Exception {
+		_company1 = CompanyTestUtil.addCompany();
+
+		long companyId = _company1.getCompanyId();
+
+		Assert.assertTrue(
+			ArrayUtil.contains(PortalInstancePool.getCompanyIds(), companyId));
+
+		Assert.assertTrue(
+			ArrayUtil.contains(
+				PortalInstancePool.getCompanyIds(), _defaultCompanyId));
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
+
+			Assert.assertArrayEquals(
+				new long[] {companyId}, PortalInstancePool.getCompanyIds());
+		}
+	}
+
+	@Test
+	public void testVirtualHostNotVisibleAcrossSecondaryInstances()
+		throws Exception {
+
+		_company1 = CompanyTestUtil.addCompany();
+		_company2 = CompanyTestUtil.addCompany();
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company1.getCompanyId())) {
+
+			List<VirtualHost> virtualHosts =
+				_virtualHostLocalService.getVirtualHosts(
+					_company2.getCompanyId());
+
+			Assert.assertTrue(virtualHosts.isEmpty());
+		}
+	}
+
+	@Test
+	public void testVirtualHostViewFiltersPeerCompanies() throws Exception {
+		_company1 = CompanyTestUtil.addCompany();
+		_company2 = CompanyTestUtil.addCompany();
+
+		String partitionName = CompanyLocalServiceTestUtil.getPartitionName(
+			_company1.getCompanyId());
+
+		Assert.assertFalse(
+			_isCompanyIdInView(
+				partitionName, "VirtualHost", _company2.getCompanyId()));
+		Assert.assertTrue(
+			_isCompanyIdInView(
+				partitionName, "VirtualHost", _company1.getCompanyId()));
+	}
+
 	private void _addCopyDBPartitionCompanyCache(long companyId) {
 		_className1 = _classNameLocalService.addClassName(_CLASS_NAME_1);
 		_className2 = _classNameLocalService.addClassName(_CLASS_NAME_2);
@@ -908,15 +1014,21 @@ public class CompanyLocalServiceDBPartitionTest
 			Company company, String name, String virtualHostname, String webId)
 		throws Exception {
 
-		Assert.assertTrue(
-			ArrayUtil.contains(
-				CompanyLocalServiceTestUtil.getCompanyIdsBySQL(),
-				company.getCompanyId()));
 		Assert.assertEquals(name, company.getName());
 		Assert.assertEquals(virtualHostname, company.getVirtualHostname());
 		Assert.assertEquals(webId, company.getWebId());
 
-		_virtualHostLocalService.getVirtualHost(virtualHostname);
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					company.getCompanyId())) {
+
+			Assert.assertTrue(
+				ArrayUtil.contains(
+					CompanyLocalServiceTestUtil.getCompanyIdsBySQL(),
+					company.getCompanyId()));
+
+			_virtualHostLocalService.getVirtualHost(virtualHostname);
+		}
 	}
 
 	private void _assertCopyDBPartitionCompanyCache(long companyId) {
@@ -1176,6 +1288,23 @@ public class CompanyLocalServiceDBPartitionTest
 		}
 
 		return false;
+	}
+
+	private boolean _isCompanyIdInView(
+			String partitionName, String tableName, long companyId)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				StringBundler.concat(
+					"select companyId from ", partitionName, StringPool.PERIOD,
+					tableName, " where companyId = ?"))) {
+
+			preparedStatement.setLong(1, companyId);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				return resultSet.next();
+			}
+		}
 	}
 
 	private static final String _CLASS_NAME_1 =
