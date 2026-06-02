@@ -75,10 +75,18 @@ public interface DBPartitionDB {
 	public default String getCreateViewSQL(
 		String fromPartitionName, String toPartitionName, String viewName) {
 
+		return getCreateViewSQL(
+			fromPartitionName, toPartitionName, viewName, StringPool.BLANK);
+	}
+
+	public default String getCreateViewSQL(
+		String fromPartitionName, String toPartitionName, String viewName,
+		String whereClause) {
+
 		return StringBundler.concat(
 			"create or replace view ", toPartitionName, StringPool.PERIOD,
 			viewName, " as select * from ", fromPartitionName,
-			StringPool.PERIOD, viewName);
+			StringPool.PERIOD, viewName, whereClause);
 	}
 
 	public String getDefaultPartitionName(Connection connection)

@@ -326,6 +326,19 @@ public class DBPartitionUtil {
 		return true;
 	}
 
+	public static boolean isCurrentCompanyRestricted() {
+		if (!PropsValues.DATABASE_PARTITION_ENABLED ||
+			CompanyThreadLocal.isInitializingPortalInstance() ||
+			CompanyThreadLocal.isUpgradingPortalInstance() ||
+			(CompanyThreadLocal.getNonsystemCompanyId() ==
+				PortalInstancePool.getDefaultCompanyId())) {
+
+			return false;
+		}
+
+		return true;
+	}
+
 	public static boolean removeDBPartition(long companyId)
 		throws PortalException {
 
@@ -466,8 +479,8 @@ public class DBPartitionUtil {
 					if (dbInspector.isControlTable(tableName)) {
 						statement.executeUpdate(
 							_dbPartitionDB.getCreateViewSQL(
-								_defaultPartitionName, partitionName,
-								tableName));
+								_defaultPartitionName, partitionName, tableName,
+								_getViewWhereClauseSQL(companyId, tableName)));
 					}
 					else {
 						statement.executeUpdate(
@@ -525,7 +538,9 @@ public class DBPartitionUtil {
 		String targetPartitionName = getPartitionName(toCompanyId);
 
 		try (AutoCloseable autoCloseable = _disableAutoCommit(connection)) {
-			_copySchema(connection, sourcePartitionName, targetPartitionName);
+			_copySchema(
+				toCompanyId, connection, sourcePartitionName,
+				targetPartitionName);
 
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
@@ -705,7 +720,7 @@ public class DBPartitionUtil {
 	}
 
 	private static void _copySchema(
-			Connection connection, String sourcePartitionName,
+			long companyId, Connection connection, String sourcePartitionName,
 			String targetPartitionName)
 		throws SQLException {
 
@@ -732,7 +747,9 @@ public class DBPartitionUtil {
 						statement.executeUpdate(
 							_dbPartitionDB.getCreateViewSQL(
 								_defaultPartitionName, targetPartitionName,
-								fromTableName));
+								fromTableName,
+								_getViewWhereClauseSQL(
+									companyId, fromTableName)));
 
 						continue;
 					}
@@ -957,7 +974,8 @@ public class DBPartitionUtil {
 
 		try (AutoCloseable autoCloseable = _disableAutoCommit(connection)) {
 			_copySchema(
-				connection, getPartitionName(companyId), exportedPartitionName);
+				companyId, connection, getPartitionName(companyId),
+				exportedPartitionName);
 
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
@@ -1305,6 +1323,18 @@ public class DBPartitionUtil {
 		return " where trigger_name like '%@" + companyId + "'";
 	}
 
+	private static String _getViewWhereClauseSQL(
+		long companyId, String tableName) {
+
+		if (StringUtil.equalsIgnoreCase(tableName, "Company") ||
+			StringUtil.equalsIgnoreCase(tableName, "VirtualHost")) {
+
+			return " where companyId = " + companyId;
+		}
+
+		return StringPool.BLANK;
+	}
+
 	private static void _importDBPartition(long companyId)
 		throws PortalException {
 
@@ -1397,7 +1427,8 @@ public class DBPartitionUtil {
 					statement.executeUpdate(
 						_dbPartitionDB.getCreateViewSQL(
 							_defaultPartitionName, targetPartitionName,
-							tableName));
+							tableName,
+							_getViewWhereClauseSQL(companyId, tableName)));
 				}
 
 				connection.commit();
@@ -1694,7 +1725,8 @@ public class DBPartitionUtil {
 						super.execute(
 							_dbPartitionDB.getCreateViewSQL(
 								_defaultPartitionName,
-								getPartitionName(companyId), tableName));
+								getPartitionName(companyId), tableName,
+								_getViewWhereClauseSQL(companyId, tableName)));
 					}
 
 					return returnValue;
