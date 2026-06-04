@@ -7,6 +7,7 @@ package com.liferay.portal.db.index;
 
 import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
@@ -21,7 +22,6 @@ import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PropsValues;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.sql.Connection;
 
@@ -163,22 +163,16 @@ public class PrimaryKeyUpdaterUtil {
 
 		CompanyLocalServiceUtil.forEachCompanyId(
 			companyId -> {
-				try {
-					try (Connection connection = DataAccess.getConnection()) {
-						db.updatePrimaryKey(
-							connection, tableName, primaryKeyColumnNames);
-					}
+				try (Connection connection = DataAccess.getConnection()) {
+					db.updatePrimaryKey(
+						connection, tableName, primaryKeyColumnNames);
 				}
 				catch (Exception exception) {
-					String message = new String(
-						"Unable to update database primary key for " +
-							tableName);
-
-					if (Validator.isNotNull(companyId)) {
-						message += " and company " + companyId;
-					}
-
-					_log.error(message + " due to " + exception.getMessage());
+					throw new Exception(
+						StringBundler.concat(
+							"Unable to update database primary key for ",
+							tableName, " and company ", companyId),
+						exception);
 				}
 			});
 	}
