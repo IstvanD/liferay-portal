@@ -133,6 +133,49 @@ public class PrimaryKeyUpdaterUtilTest {
 		}
 	}
 
+	@Test
+	public void testUpdateAllPrimaryKeysWhenPrimaryKeyIsDuplicated()
+		throws Exception {
+
+		DB db = DBManagerUtil.getDB();
+
+		try (Connection connection = DataAccess.getConnection()) {
+			db.removePrimaryKey(connection, "Counter");
+
+			String name = StringUtil.randomId();
+
+			db.runSQL(
+				connection,
+				"insert into Counter (name, currentId) values ('" + name +
+					"', 0)");
+			db.runSQL(
+				connection,
+				"insert into Counter (name, currentId) values ('" + name +
+					"', 0)");
+
+			try {
+				PrimaryKeyUpdaterUtil.updateAllPrimaryKeys();
+
+				Assert.fail();
+			}
+			catch (Exception exception) {
+				Assert.assertTrue(
+					exception.getMessage(
+					).contains(
+						"Unable to update database primary key for Counter"
+					));
+			}
+			finally {
+				db.runSQL(
+					connection,
+					"delete from Counter where name = '" + name + "'");
+
+				db.updatePrimaryKey(
+					connection, "Counter", new String[] {"name"});
+			}
+		}
+	}
+
 	private void _testUpdateAllPrimaryKeys() throws Exception {
 		DB db = DBManagerUtil.getDB();
 
