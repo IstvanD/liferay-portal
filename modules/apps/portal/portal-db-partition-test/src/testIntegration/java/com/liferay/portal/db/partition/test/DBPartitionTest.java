@@ -769,6 +769,23 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 	}
 
 	@Test
+	public void testIncrementSystemCounter() throws Exception {
+		long count = CompanyThreadLocal.incrementSystemCounter();
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					COMPANY_IDS[0])) {
+
+			Assert.assertEquals(
+				count + 1, CompanyThreadLocal.incrementSystemCounter());
+
+			Assert.assertEquals(
+				Long.valueOf(COMPANY_IDS[0]),
+				CompanyThreadLocal.getCompanyId());
+		}
+	}
+
+	@Test
 	public void testInitResourceActions() throws Exception {
 		DBPartitionUtil.forEachCompanyId(
 			companyId -> StartupHelperUtil.initResourceActions());
