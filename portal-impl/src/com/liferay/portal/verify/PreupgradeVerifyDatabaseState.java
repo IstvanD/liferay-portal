@@ -220,7 +220,9 @@ public class PreupgradeVerifyDatabaseState extends PreupgradeVerifyProcess {
 		}
 
 		for (String missingTableName : missingTableNames) {
-			if (dbInspector.isControlTable(missingTableName)) {
+			if (dbInspector.isControlTable(missingTableName) ||
+				dbInspector.hasView(missingTableName)) {
+
 				viewNames.add(dbInspector.normalizeName(missingTableName));
 			}
 		}
