@@ -27,10 +27,12 @@ import com.liferay.portal.db.partition.test.util.BaseDBPartitionTestCase;
 import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBType;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.User;
@@ -318,13 +320,17 @@ public class CompanyLocalServiceDBPartitionTest
 					CompanyLocalServiceTestUtil.getCompanyIdsBySQL(),
 					company.getCompanyId()));
 
-			Assert.assertEquals(name, company.getName());
 			Assert.assertEquals(virtualHostName, company.getVirtualHostname());
 			Assert.assertEquals(webId, company.getWebId());
 
 			try (SafeCloseable safeCloseable =
 					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 						company.getCompanyId())) {
+
+				Company partitionCompany = companyLocalService.getCompany(
+					company.getCompanyId());
+
+				Assert.assertEquals(name, partitionCompany.getName());
 
 				CompanyLocalServiceTestUtil.assertConfiguration(
 					_configurationAdmin, _persistenceManager, pid, true);
@@ -809,6 +815,32 @@ public class CompanyLocalServiceDBPartitionTest
 		}
 	}
 
+	@Test
+	public void testIsCurrentCompanyRestricted() throws Exception {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_defaultCompanyId)) {
+
+			Assert.assertFalse(DBPartition.isCurrentCompanyRestricted());
+		}
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					CompanyConstants.SYSTEM)) {
+
+			Assert.assertFalse(DBPartition.isCurrentCompanyRestricted());
+		}
+
+		_company1 = CompanyTestUtil.addCompany();
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company1.getCompanyId())) {
+
+			Assert.assertTrue(DBPartition.isCurrentCompanyRestricted());
+		}
+	}
+
 	private void _addCopyDBPartitionCompanyCache(long companyId) {
 		_className1 = _classNameLocalService.addClassName(_CLASS_NAME_1);
 		_className2 = _classNameLocalService.addClassName(_CLASS_NAME_2);
@@ -912,11 +944,20 @@ public class CompanyLocalServiceDBPartitionTest
 			ArrayUtil.contains(
 				CompanyLocalServiceTestUtil.getCompanyIdsBySQL(),
 				company.getCompanyId()));
-		Assert.assertEquals(name, company.getName());
 		Assert.assertEquals(virtualHostname, company.getVirtualHostname());
 		Assert.assertEquals(webId, company.getWebId());
 
-		_virtualHostLocalService.getVirtualHost(virtualHostname);
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					company.getCompanyId())) {
+
+			Company partitionCompany = companyLocalService.getCompany(
+				company.getCompanyId());
+
+			Assert.assertEquals(name, partitionCompany.getName());
+
+			_virtualHostLocalService.getVirtualHost(virtualHostname);
+		}
 	}
 
 	private void _assertCopyDBPartitionCompanyCache(long companyId) {
