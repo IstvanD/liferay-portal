@@ -54,6 +54,70 @@ public interface Company extends CompanyModel, PersistedModel {
 
 	public CompanyInfo getCompanyInfo();
 
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getHomeURL();
+
+	public void setHomeURL(String homeURL);
+
+	public long getLogoId();
+
+	public void setLogoId(long logoId);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getName();
+
+	public void setName(String name);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getLegalName();
+
+	public void setLegalName(String legalName);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getLegalId();
+
+	public void setLegalId(String legalId);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getLegalType();
+
+	public void setLegalType(String legalType);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getSicCode();
+
+	public void setSicCode(String sicCode);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getTickerSymbol();
+
+	public void setTickerSymbol(String tickerSymbol);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getIndustry();
+
+	public void setIndustry(String industry);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getType();
+
+	public void setType(String type);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getSize();
+
+	public void setSize(String size);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getIndexNameCurrent();
+
+	public void setIndexNameCurrent(String indexNameCurrent);
+
+	@com.liferay.portal.kernel.bean.AutoEscape
+	public String getIndexNameNext();
+
+	public void setIndexNameNext(String indexNameNext);
+
 	/**
 	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #getGuestUser}
 	 */
@@ -119,4 +183,4 @@ public interface Company extends CompanyModel, PersistedModel {
 	public void setVirtualHostname(String virtualHostname);
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:1558084506
+// LIFERAY-SERVICE-BUILDER-HASH:45257533
