@@ -11,6 +11,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.Disjunction;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.AddressCityException;
 import com.liferay.portal.kernel.exception.AddressStreetException;
 import com.liferay.portal.kernel.exception.AddressZipException;
@@ -294,7 +295,13 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 			actionRequest, "name", company.getName());
 		String virtualHostname = ParamUtil.getString(
 			actionRequest, "virtualHostname", company.getVirtualHostname());
-		String mx = ParamUtil.getString(actionRequest, "mx", company.getMx());
+
+		String mx = company.getMx();
+
+		if (!DBPartition.isCurrentCompanyRestricted()) {
+			mx = ParamUtil.getString(actionRequest, "mx", mx);
+		}
+
 		String homeURL = ParamUtil.getString(
 			actionRequest, "homeURL", company.getHomeURL());
 

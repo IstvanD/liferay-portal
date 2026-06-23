@@ -6,15 +6,37 @@
 package com.liferay.portal.kernel.db.partition;
 
 import com.liferay.counter.kernel.model.Counter;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.PropsValues;
 
 /**
  * @author Luis Ortiz
  */
 public class DBPartition {
+
+	public static boolean isCurrentCompanyRestricted() {
+		if (!PropsValues.DATABASE_PARTITION_ENABLED ||
+			CompanyThreadLocal.isInitializingPortalInstance() ||
+			CompanyThreadLocal.isUpgradingPortalInstance()) {
+
+			return false;
+		}
+
+		Long companyId = CompanyThreadLocal.getCompanyId();
+
+		if ((companyId == null) || (companyId == CompanyConstants.SYSTEM) ||
+			(companyId == PortalInstancePool.getDefaultCompanyId())) {
+
+			return false;
+		}
+
+		return true;
+	}
 
 	public static boolean isPartitionedModel(Class<?> clazz) {
 		if (PropsValues.DATABASE_PARTITION_ENABLED &&
