@@ -9,6 +9,7 @@ import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.AvailableLocaleException;
 import com.liferay.portal.kernel.exception.NoSuchVirtualHostException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -30,6 +31,7 @@ import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.impl.LayoutSetImpl;
 import com.liferay.portal.service.base.VirtualHostLocalServiceBaseImpl;
+import com.liferay.portal.util.VirtualHostRegistry;
 
 import java.net.IDN;
 import java.net.Inet6Address;
@@ -112,6 +114,12 @@ public class VirtualHostLocalServiceImpl
 		if ((virtualHost == null) && hostname.contains("xn--")) {
 			virtualHost = virtualHostPersistence.fetchByHostname(
 				IDN.toUnicode(hostname));
+		}
+
+		if ((virtualHost == null) && PropsValues.DATABASE_PARTITION_ENABLED &&
+			!DBPartition.isCurrentCompanyRestricted()) {
+
+			virtualHost = VirtualHostRegistry.fetchVirtualHost(hostname);
 		}
 
 		return virtualHost;
@@ -240,6 +248,8 @@ public class VirtualHostLocalServiceImpl
 			virtualHostPersistence.update(virtualHost);
 		}
 
+		List<VirtualHost> removedVirtualHosts = new ArrayList<>();
+
 		Iterator<VirtualHost> iterator = virtualHosts.iterator();
 
 		while (iterator.hasNext()) {
@@ -248,11 +258,29 @@ public class VirtualHostLocalServiceImpl
 			if (!hostnames.containsKey(virtualHost.getHostname())) {
 				iterator.remove();
 
+				removedVirtualHosts.add(virtualHost);
+
 				virtualHostPersistence.remove(virtualHost);
 			}
 		}
 
 		virtualHostPersistence.cacheResult(virtualHosts);
+
+		if (PropsValues.DATABASE_PARTITION_ENABLED) {
+			TransactionCommitCallbackUtil.registerCallback(
+				() -> {
+					for (VirtualHost removedVirtualHost : removedVirtualHosts) {
+						VirtualHostRegistry.unregister(
+							removedVirtualHost.getHostname());
+					}
+
+					for (VirtualHost virtualHost : virtualHosts) {
+						VirtualHostRegistry.register(virtualHost);
+					}
+
+					return null;
+				});
+		}
 
 		Company company = _companyPersistence.fetchByPrimaryKey(companyId);
 

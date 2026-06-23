@@ -30,6 +30,7 @@ import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.encryptor.EncryptorException;
 import com.liferay.portal.kernel.encryptor.EncryptorUtil;
 import com.liferay.portal.kernel.exception.CompanyMaxUsersException;
@@ -135,6 +136,7 @@ import com.liferay.portal.liveusers.LiveUsers;
 import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
 import com.liferay.portal.service.base.CompanyLocalServiceBaseImpl;
 import com.liferay.portal.util.PortalInstances;
+import com.liferay.portal.util.VirtualHostRegistry;
 
 import jakarta.portlet.PortletException;
 import jakarta.portlet.PortletPreferences;
@@ -840,6 +842,12 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		if ((virtualHost == null) && virtualHostname.contains("xn--")) {
 			virtualHost = _virtualHostPersistence.fetchByHostname(
 				IDN.toUnicode(virtualHostname));
+		}
+
+		if ((virtualHost == null) && PropsValues.DATABASE_PARTITION_ENABLED &&
+			!DBPartition.isCurrentCompanyRestricted()) {
+
+			virtualHost = VirtualHostRegistry.fetchVirtualHost(virtualHostname);
 		}
 
 		if ((virtualHost == null) || (virtualHost.getLayoutSetId() != 0)) {
