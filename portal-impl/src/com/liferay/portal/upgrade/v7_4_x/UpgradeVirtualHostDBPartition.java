@@ -18,9 +18,9 @@ public class UpgradeVirtualHostDBPartition extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		if (CompanyThreadLocal.getCompanyId() !=
-				PortalInstancePool.getDefaultCompanyId()) {
+		long defaultCompanyId = PortalInstancePool.getDefaultCompanyId();
 
+		if (CompanyThreadLocal.getCompanyId() != defaultCompanyId) {
 			return;
 		}
 
@@ -29,6 +29,9 @@ public class UpgradeVirtualHostDBPartition extends UpgradeProcess {
 				connection, companyId, "VirtualHost", true,
 				" where companyId = " + companyId);
 		}
+
+		runSQL(
+			"delete from VirtualHost where companyId != " + defaultCompanyId);
 	}
 
 	@Override
