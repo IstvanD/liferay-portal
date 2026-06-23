@@ -779,6 +779,9 @@ public class PortalUpgradeProcessRegistryImpl
 
 		upgradeVersionTreeMap.put(
 			new Version(38, 5, 1), new UpgradeCompanyInfo());
+
+		upgradeVersionTreeMap.put(
+			new Version(38, 5, 2), new UpgradeVirtualHostDBPartition());
 	}
 
 }
