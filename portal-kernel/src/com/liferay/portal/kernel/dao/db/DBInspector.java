@@ -495,8 +495,7 @@ public class DBInspector {
 	private static final Pattern _columnTypePattern = Pattern.compile(
 		"(^\\w+)", Pattern.CASE_INSENSITIVE);
 	private static final Set<String> _controlTableNames = new HashSet<>(
-		Arrays.asList(
-			"company", "release_", "servicecomponent", "virtualhost"));
+		Arrays.asList("company", "release_", "servicecomponent"));
 	private static final Set<String> _partitionedControlTableNames =
 		new HashSet<>(Arrays.asList("classname_", "counter", "resourceaction"));
 

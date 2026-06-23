@@ -364,6 +364,15 @@ public class DBPartitionUtil {
 			boolean copyData)
 		throws Exception {
 
+		replaceByTable(
+			connection, companyId, viewName, copyData, StringPool.BLANK);
+	}
+
+	public static void replaceByTable(
+			Connection connection, long companyId, String viewName,
+			boolean copyData, String whereClause)
+		throws Exception {
+
 		if (companyId == _defaultCompanyId) {
 			return;
 		}
@@ -385,7 +394,7 @@ public class DBPartitionUtil {
 						_defaultPartitionName, partitionName, viewName,
 						_getColumnNames(
 							connection, _defaultPartitionName, viewName),
-						StringPool.BLANK));
+						whereClause));
 			}
 		}
 	}
@@ -757,7 +766,9 @@ public class DBPartitionUtil {
 							targetPartitionName, fromTableName, fromTableName));
 
 					if (StringUtil.equalsIgnoreCase(
-							fromTableName, "Configuration_")) {
+							fromTableName, "Configuration_") ||
+						StringUtil.equalsIgnoreCase(
+							fromTableName, "VirtualHost")) {
 
 						continue;
 					}
