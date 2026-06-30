@@ -47,6 +47,7 @@ import com.liferay.portal.kernel.service.RepositoryLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.VirtualHostLocalService;
+import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.AssumeTestRule;
@@ -91,6 +92,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.felix.cm.PersistenceManager;
 
@@ -775,6 +777,53 @@ public class CompanyLocalServiceDBPartitionTest
 
 		CompanyLocalServiceTestUtil.assertConfiguration(
 			_configurationAdmin, _persistenceManager, pid, false);
+	}
+
+	@Test
+	public void testDeleteCompanyKeepsCompanyInDeletionProcessUntilRemoved()
+		throws Exception {
+
+		_company1 = CompanyTestUtil.addCompany();
+
+		AopInvocationHandler aopInvocationHandler =
+			ProxyUtil.fetchInvocationHandler(
+				companyLocalService, AopInvocationHandler.class);
+
+		long companyId = _company1.getCompanyId();
+
+		AtomicBoolean companyInDeletionProcess = new AtomicBoolean();
+
+		CompanyPersistence companyPersistence =
+			ReflectionTestUtil.getFieldValue(
+				aopInvocationHandler.getTarget(), "companyPersistence");
+
+		try (AutoCloseable autoCloseable =
+				ReflectionTestUtil.setFieldValueWithAutoCloseable(
+					aopInvocationHandler.getTarget(), "companyPersistence",
+					ProxyUtil.newProxyInstance(
+						CompanyPersistence.class.getClassLoader(),
+						new Class<?>[] {CompanyPersistence.class},
+						(proxy, method, args) -> {
+							if (Objects.equals(
+									method.getName(), "fetchByPrimaryKey") &&
+								Objects.equals(args[0], companyId)) {
+
+								companyInDeletionProcess.set(
+									PortalInstances.isCompanyInDeletionProcess(
+										companyId));
+							}
+
+							return method.invoke(companyPersistence, args);
+						}))) {
+
+			companyLocalService.deleteCompany(_company1);
+		}
+
+		Assert.assertFalse(
+			ArrayUtil.contains(
+				CompanyLocalServiceTestUtil.getCompanyIdsBySQL(), companyId));
+
+		Assert.assertTrue(companyInDeletionProcess.get());
 	}
 
 	@Test
