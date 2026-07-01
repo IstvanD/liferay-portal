@@ -14,10 +14,12 @@ import com.liferay.portal.kernel.dao.db.BaseDBProcess;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -564,6 +566,35 @@ public class BaseDBProcessTest extends BaseDBProcess {
 							value, " where id = ", value));
 				},
 				null));
+	}
+
+	@Test
+	public void testProcessConcurrentlyOnDB2WithResultSetLargerThanFetchSize()
+		throws Exception {
+
+		Assume.assumeTrue(_db.getDBType() == DBType.DB2);
+
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"UPGRADE_CONCURRENT_FETCH_SIZE",
+					_PROCESS_CONCURRENTLY_COUNT / 10)) {
+
+			_validateProcessConcurrently(
+				threadIds -> processConcurrently(
+					"select id from " + _TABLE_NAME,
+					resultSet -> new Object[] {resultSet.getInt("id")},
+					values -> {
+						_recordThread(threadIds);
+
+						int value = (int)values[0];
+
+						runSQL(
+							StringBundler.concat(
+								"update ", _TABLE_NAME, " set typeInteger = ",
+								value, " where id = ", value));
+					},
+					null));
+		}
 	}
 
 	@Test
