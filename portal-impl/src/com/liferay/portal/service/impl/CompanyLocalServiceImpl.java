@@ -136,6 +136,7 @@ import com.liferay.portal.liveusers.LiveUsers;
 import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
 import com.liferay.portal.service.base.CompanyLocalServiceBaseImpl;
 import com.liferay.portal.util.PortalInstances;
+import com.liferay.portal.util.VirtualHostRegistry;
 
 import jakarta.portlet.PortletException;
 import jakarta.portlet.PortletPreferences;
@@ -770,6 +771,10 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		if ((virtualHost == null) && virtualHostname.contains("xn--")) {
 			virtualHost = _virtualHostPersistence.fetchByHostname(
 				IDN.toUnicode(virtualHostname));
+		}
+
+		if ((virtualHost == null) && PropsValues.DATABASE_PARTITION_ENABLED) {
+			virtualHost = VirtualHostRegistry.fetchVirtualHost(virtualHostname);
 		}
 
 		if ((virtualHost == null) || (virtualHost.getLayoutSetId() != 0)) {
