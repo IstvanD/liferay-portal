@@ -9,6 +9,8 @@ import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.net.IDN;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,7 +25,15 @@ public class VirtualHostRegistry {
 			return null;
 		}
 
-		return _virtualHosts.get(StringUtil.toLowerCase(hostname));
+		VirtualHost virtualHost = _virtualHosts.get(
+			StringUtil.toLowerCase(hostname));
+
+		if ((virtualHost == null) && hostname.contains("xn--")) {
+			virtualHost = _virtualHosts.get(
+				StringUtil.toLowerCase(IDN.toUnicode(hostname)));
+		}
+
+		return virtualHost;
 	}
 
 	public static void register(VirtualHost virtualHost) {
