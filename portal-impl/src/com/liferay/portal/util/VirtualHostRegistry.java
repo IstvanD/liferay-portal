@@ -5,7 +5,6 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -20,30 +19,31 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class VirtualHostRegistry {
 
-	public static VirtualHost fetchVirtualHost(String hostname) {
+	public static long fetchCompanyId(String hostname) {
 		if (Validator.isNull(hostname)) {
-			return null;
+			return 0;
 		}
 
-		VirtualHost virtualHost = _virtualHosts.get(
-			StringUtil.toLowerCase(hostname));
+		Long companyId = _companyIds.get(StringUtil.toLowerCase(hostname));
 
-		if ((virtualHost == null) && hostname.contains("xn--")) {
-			virtualHost = _virtualHosts.get(
+		if ((companyId == null) && hostname.contains("xn--")) {
+			companyId = _companyIds.get(
 				StringUtil.toLowerCase(IDN.toUnicode(hostname)));
 		}
 
-		return virtualHost;
+		if (companyId == null) {
+			return 0;
+		}
+
+		return companyId;
 	}
 
-	public static void register(VirtualHost virtualHost) {
-		String hostname = virtualHost.getHostname();
-
+	public static void register(String hostname, long companyId) {
 		if (Validator.isNull(hostname)) {
 			return;
 		}
 
-		_virtualHosts.put(StringUtil.toLowerCase(hostname), virtualHost);
+		_companyIds.put(StringUtil.toLowerCase(hostname), companyId);
 	}
 
 	public static void unregister(String hostname) {
@@ -51,17 +51,16 @@ public class VirtualHostRegistry {
 			return;
 		}
 
-		_virtualHosts.remove(StringUtil.toLowerCase(hostname));
+		_companyIds.remove(StringUtil.toLowerCase(hostname));
 	}
 
 	public static void unregisterVirtualHosts(long companyId) {
-		Collection<VirtualHost> virtualHosts = _virtualHosts.values();
+		Collection<Long> companyIds = _companyIds.values();
 
-		virtualHosts.removeIf(
-			virtualHost -> virtualHost.getCompanyId() == companyId);
+		companyIds.removeIf(curCompanyId -> curCompanyId == companyId);
 	}
 
-	private static final Map<String, VirtualHost> _virtualHosts =
+	private static final Map<String, Long> _companyIds =
 		new ConcurrentHashMap<>();
 
 }

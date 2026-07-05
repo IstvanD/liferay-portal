@@ -10,7 +10,6 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.db.partition.test.util.BaseDBPartitionTestCase;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.AssumeTestRule;
@@ -49,27 +48,34 @@ public class VirtualHostRegistryTest extends BaseDBPartitionTestCase {
 
 		String virtualHostname = _company.getVirtualHostname();
 
-		VirtualHost virtualHost = VirtualHostRegistry.fetchVirtualHost(
-			virtualHostname);
-
 		Assert.assertEquals(
-			_company.getCompanyId(), virtualHost.getCompanyId());
+			_company.getCompanyId(),
+			VirtualHostRegistry.fetchCompanyId(virtualHostname));
 
 		_companyLocalService.deleteCompany(_company);
 
-		Assert.assertNull(
-			VirtualHostRegistry.fetchVirtualHost(virtualHostname));
+		Assert.assertEquals(
+			0, VirtualHostRegistry.fetchCompanyId(virtualHostname));
 	}
 
 	@Test
-	public void testFetchVirtualHost() throws Exception {
+	public void testFetchCompanyByVirtualHost() throws Exception {
+		_company = CompanyTestUtil.addCompany();
+
+		Company company = _companyLocalService.fetchCompanyByVirtualHost(
+			_company.getVirtualHostname());
+
+		Assert.assertEquals(_company.getCompanyId(), company.getCompanyId());
+	}
+
+	@Test
+	public void testFetchCompanyId() throws Exception {
 		Company company = _companyLocalService.getCompany(
 			PortalInstancePool.getDefaultCompanyId());
 
-		VirtualHost virtualHost = VirtualHostRegistry.fetchVirtualHost(
-			company.getVirtualHostname());
-
-		Assert.assertEquals(company.getCompanyId(), virtualHost.getCompanyId());
+		Assert.assertEquals(
+			company.getCompanyId(),
+			VirtualHostRegistry.fetchCompanyId(company.getVirtualHostname()));
 	}
 
 	@Test
@@ -86,14 +92,11 @@ public class VirtualHostRegistryTest extends BaseDBPartitionTestCase {
 			_company.getCompanyId(), newVirtualHostname, _company.getMx(),
 			_company.getMaxUsers(), _company.isActive());
 
-		Assert.assertNull(
-			VirtualHostRegistry.fetchVirtualHost(virtualHostname));
-
-		VirtualHost virtualHost = VirtualHostRegistry.fetchVirtualHost(
-			newVirtualHostname);
-
 		Assert.assertEquals(
-			_company.getCompanyId(), virtualHost.getCompanyId());
+			0, VirtualHostRegistry.fetchCompanyId(virtualHostname));
+		Assert.assertEquals(
+			_company.getCompanyId(),
+			VirtualHostRegistry.fetchCompanyId(newVirtualHostname));
 	}
 
 	@DeleteAfterTestRun

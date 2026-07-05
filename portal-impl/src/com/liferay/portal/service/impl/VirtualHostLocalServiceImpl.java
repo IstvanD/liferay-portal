@@ -115,10 +115,6 @@ public class VirtualHostLocalServiceImpl
 				IDN.toUnicode(hostname));
 		}
 
-		if ((virtualHost == null) && PropsValues.DATABASE_PARTITION_ENABLED) {
-			virtualHost = VirtualHostRegistry.fetchVirtualHost(hostname);
-		}
-
 		return virtualHost;
 	}
 
@@ -245,7 +241,7 @@ public class VirtualHostLocalServiceImpl
 			virtualHostPersistence.update(virtualHost);
 		}
 
-		List<VirtualHost> removedVirtualHosts = new ArrayList<>();
+		List<String> removedHostnames = new ArrayList<>();
 
 		Iterator<VirtualHost> iterator = virtualHosts.iterator();
 
@@ -255,7 +251,7 @@ public class VirtualHostLocalServiceImpl
 			if (!hostnames.containsKey(virtualHost.getHostname())) {
 				iterator.remove();
 
-				removedVirtualHosts.add(virtualHost);
+				removedHostnames.add(virtualHost.getHostname());
 
 				virtualHostPersistence.remove(virtualHost);
 			}
@@ -266,13 +262,14 @@ public class VirtualHostLocalServiceImpl
 		if (PropsValues.DATABASE_PARTITION_ENABLED) {
 			TransactionCommitCallbackUtil.registerCallback(
 				() -> {
-					for (VirtualHost removedVirtualHost : removedVirtualHosts) {
-						VirtualHostRegistry.unregister(
-							removedVirtualHost.getHostname());
+					for (String removedHostname : removedHostnames) {
+						VirtualHostRegistry.unregister(removedHostname);
 					}
 
 					for (VirtualHost virtualHost : virtualHosts) {
-						VirtualHostRegistry.register(virtualHost);
+						VirtualHostRegistry.register(
+							virtualHost.getHostname(),
+							virtualHost.getCompanyId());
 					}
 
 					return null;
