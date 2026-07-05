@@ -10,6 +10,7 @@ import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.AvailableLocaleException;
+import com.liferay.portal.kernel.exception.CompanyVirtualHostException;
 import com.liferay.portal.kernel.exception.NoSuchVirtualHostException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -209,6 +210,19 @@ public class VirtualHostLocalServiceImpl
 			}
 
 			if (virtualHost == null) {
+				if (PropsValues.DATABASE_PARTITION_ENABLED) {
+					long virtualHostCompanyId =
+						VirtualHostRegistry.fetchCompanyId(curHostname);
+
+					if ((virtualHostCompanyId != 0) &&
+						(virtualHostCompanyId != companyId)) {
+
+						ReflectionUtil.throwException(
+							new CompanyVirtualHostException(
+								"Duplicate virtual hostname " + curHostname));
+					}
+				}
+
 				long virtualHostId = DBPartitionUtil.incrementCounter();
 
 				virtualHost = virtualHostPersistence.create(virtualHostId);

@@ -8,6 +8,7 @@ package com.liferay.company.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.db.partition.test.util.BaseDBPartitionTestCase;
+import com.liferay.portal.kernel.exception.CompanyVirtualHostException;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -44,15 +45,15 @@ public class VirtualHostRegistryTest extends BaseDBPartitionTestCase {
 
 	@Test
 	public void testAddAndDeleteCompany() throws Exception {
-		_company = CompanyTestUtil.addCompany();
+		_company1 = CompanyTestUtil.addCompany();
 
-		String virtualHostname = _company.getVirtualHostname();
+		String virtualHostname = _company1.getVirtualHostname();
 
 		Assert.assertEquals(
-			_company.getCompanyId(),
+			_company1.getCompanyId(),
 			VirtualHostRegistry.fetchCompanyId(virtualHostname));
 
-		_companyLocalService.deleteCompany(_company);
+		_companyLocalService.deleteCompany(_company1);
 
 		Assert.assertEquals(
 			0, VirtualHostRegistry.fetchCompanyId(virtualHostname));
@@ -60,12 +61,12 @@ public class VirtualHostRegistryTest extends BaseDBPartitionTestCase {
 
 	@Test
 	public void testFetchCompanyByVirtualHost() throws Exception {
-		_company = CompanyTestUtil.addCompany();
+		_company1 = CompanyTestUtil.addCompany();
 
 		Company company = _companyLocalService.fetchCompanyByVirtualHost(
-			_company.getVirtualHostname());
+			_company1.getVirtualHostname());
 
-		Assert.assertEquals(_company.getCompanyId(), company.getCompanyId());
+		Assert.assertEquals(_company1.getCompanyId(), company.getCompanyId());
 	}
 
 	@Test
@@ -80,27 +81,43 @@ public class VirtualHostRegistryTest extends BaseDBPartitionTestCase {
 
 	@Test
 	public void testUpdateVirtualHostname() throws Exception {
-		_company = CompanyTestUtil.addCompany();
+		_company1 = CompanyTestUtil.addCompany();
 
-		String virtualHostname = _company.getVirtualHostname();
+		String virtualHostname = _company1.getVirtualHostname();
 
 		String newVirtualHostname =
 			RandomTestUtil.randomString() + StringPool.PERIOD +
 				RandomTestUtil.randomString(3);
 
 		_companyLocalService.updateCompany(
-			_company.getCompanyId(), newVirtualHostname, _company.getMx(),
-			_company.getMaxUsers(), _company.isActive());
+			_company1.getCompanyId(), newVirtualHostname, _company1.getMx(),
+			_company1.getMaxUsers(), _company1.isActive());
 
 		Assert.assertEquals(
 			0, VirtualHostRegistry.fetchCompanyId(virtualHostname));
 		Assert.assertEquals(
-			_company.getCompanyId(),
+			_company1.getCompanyId(),
 			VirtualHostRegistry.fetchCompanyId(newVirtualHostname));
 	}
 
+	@Test(expected = CompanyVirtualHostException.class)
+	public void testUpdateVirtualHostnameWhenHostnameIsDuplicate()
+		throws Exception {
+
+		_company1 = CompanyTestUtil.addCompany();
+
+		_company2 = CompanyTestUtil.addCompany();
+
+		_companyLocalService.updateCompany(
+			_company2.getCompanyId(), _company1.getVirtualHostname(),
+			_company2.getMx(), _company2.getMaxUsers(), _company2.isActive());
+	}
+
 	@DeleteAfterTestRun
-	private Company _company;
+	private Company _company1;
+
+	@DeleteAfterTestRun
+	private Company _company2;
 
 	@Inject
 	private CompanyLocalService _companyLocalService;
