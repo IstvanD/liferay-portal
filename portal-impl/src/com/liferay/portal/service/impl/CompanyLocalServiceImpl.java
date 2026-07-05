@@ -765,22 +765,14 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		virtualHostname = StringUtil.toLowerCase(
 			StringUtil.trim(virtualHostname));
 
-		if (PropsValues.DATABASE_PARTITION_ENABLED &&
-			CompanyThreadLocal.isDefaultCompany()) {
+		VirtualHost virtualHost = _virtualHostLocalService.fetchVirtualHost(
+			virtualHostname);
 
-			long companyId = VirtualHostRegistry.fetchCompanyId(virtualHostname);
-
-			if (companyId != 0) {
-				try (SafeCloseable safeCloseable =
-						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-							companyId)) {
-
-					return _fetchCompanyByVirtualHost(virtualHostname);
-				}
-			}
+		if ((virtualHost == null) || (virtualHost.getLayoutSetId() != 0)) {
+			return null;
 		}
 
-		return _fetchCompanyByVirtualHost(virtualHostname);
+		return companyPersistence.fetchByPrimaryKey(virtualHost.getCompanyId());
 	}
 
 	@Override
@@ -2467,22 +2459,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 				return null;
 			});
-	}
-
-	private Company _fetchCompanyByVirtualHost(String virtualHostname) {
-		VirtualHost virtualHost = _virtualHostPersistence.fetchByHostname(
-			virtualHostname);
-
-		if ((virtualHost == null) && virtualHostname.contains("xn--")) {
-			virtualHost = _virtualHostPersistence.fetchByHostname(
-				IDN.toUnicode(virtualHostname));
-		}
-
-		if ((virtualHost == null) || (virtualHost.getLayoutSetId() != 0)) {
-			return null;
-		}
-
-		return companyPersistence.fetchByPrimaryKey(virtualHost.getCompanyId());
 	}
 
 	private long _getNextCompanyId() {

@@ -5,6 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
@@ -20,6 +21,7 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.VirtualHost;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutSetPersistence;
@@ -108,15 +110,22 @@ public class VirtualHostLocalServiceImpl
 			}
 		}
 
-		VirtualHost virtualHost = virtualHostPersistence.fetchByHostname(
-			hostname);
+		if (PropsValues.DATABASE_PARTITION_ENABLED &&
+			CompanyThreadLocal.isDefaultCompany()) {
 
-		if ((virtualHost == null) && hostname.contains("xn--")) {
-			virtualHost = virtualHostPersistence.fetchByHostname(
-				IDN.toUnicode(hostname));
+			long companyId = VirtualHostRegistry.fetchCompanyId(hostname);
+
+			if (companyId != 0) {
+				try (SafeCloseable safeCloseable =
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+							companyId)) {
+
+					return _fetchVirtualHost(hostname);
+				}
+			}
 		}
 
-		return virtualHost;
+		return _fetchVirtualHost(hostname);
 	}
 
 	@Override
@@ -329,6 +338,18 @@ public class VirtualHostLocalServiceImpl
 		}
 
 		return virtualHosts;
+	}
+
+	private VirtualHost _fetchVirtualHost(String hostname) {
+		VirtualHost virtualHost = virtualHostPersistence.fetchByHostname(
+			hostname);
+
+		if ((virtualHost == null) && hostname.contains("xn--")) {
+			virtualHost = virtualHostPersistence.fetchByHostname(
+				IDN.toUnicode(hostname));
+		}
+
+		return virtualHost;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
