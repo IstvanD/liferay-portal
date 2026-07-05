@@ -135,7 +135,6 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.liveusers.LiveUsers;
 import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
 import com.liferay.portal.service.base.CompanyLocalServiceBaseImpl;
-import com.liferay.portal.util.CompanyRegistry;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.VirtualHostRegistry;
 
@@ -782,15 +781,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			return null;
 		}
 
-		long companyId = virtualHost.getCompanyId();
-
-		Company company = companyPersistence.fetchByPrimaryKey(companyId);
-
-		if ((company == null) && PropsValues.DATABASE_PARTITION_ENABLED) {
-			company = CompanyRegistry.fetchCompany(companyId);
-		}
-
-		return company;
+		return companyPersistence.fetchByPrimaryKey(virtualHost.getCompanyId());
 	}
 
 	@Override
@@ -996,16 +987,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 	 */
 	@Override
 	public Company getCompanyByWebId(String webId) throws PortalException {
-		Company company = companyPersistence.fetchByWebId(webId);
-
-		if ((company == null) && PropsValues.DATABASE_PARTITION_ENABLED) {
-			company = CompanyRegistry.fetchCompanyByWebId(webId);
-		}
-
-		if (company != null) {
-			return company;
-		}
-
 		return companyPersistence.findByWebId(webId);
 	}
 
@@ -1137,11 +1118,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 	public Company updateCompany(Company company) {
 		_companyInfoPersistence.update(company.getCompanyInfo());
 
-		Company updatedCompany = super.updateCompany(company);
-
-		_updateCompanyRegistry(updatedCompany);
-
-		return updatedCompany;
+		return super.updateCompany(company);
 	}
 
 	/**
@@ -1189,9 +1166,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		company.setMaxUsers(maxUsers);
 		company.setActive(active);
 
-		company = companyPersistence.update(company);
-
-		_updateCompanyRegistry(company);
+		companyPersistence.update(company);
 
 		// Virtual host
 
@@ -1266,9 +1241,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		company.setType(type);
 		company.setSize(size);
 
-		company = companyPersistence.update(company);
-
-		_updateCompanyRegistry(company);
+		companyPersistence.update(company);
 
 		// Virtual host
 
@@ -1365,11 +1338,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 		company.setIndexNameNext(indexNameNext);
 
-		company = companyPersistence.update(company);
-
-		_updateCompanyRegistry(company);
-
-		return company;
+		return companyPersistence.update(company);
 	}
 
 	@Override
@@ -1382,11 +1351,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		company.setIndexNameCurrent(indexNameCurrent);
 		company.setIndexNameNext(indexNameNext);
 
-		company = companyPersistence.update(company);
-
-		_updateCompanyRegistry(company);
-
-		return company;
+		return companyPersistence.update(company);
 	}
 
 	/**
@@ -1607,8 +1572,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			company.setLogoId(logoId);
 
 			company = companyPersistence.update(company);
-
-			_updateCompanyRegistry(company);
 		}
 
 		return company;
@@ -1895,8 +1858,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 	protected void registerCompany(Company company) {
 		if (PropsValues.DATABASE_PARTITION_ENABLED) {
-			CompanyRegistry.register(company);
-
 			for (VirtualHost virtualHost :
 					_virtualHostLocalService.getVirtualHosts(
 						company.getCompanyId())) {
@@ -1941,7 +1902,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		if (PropsValues.DATABASE_PARTITION_ENABLED) {
 			long companyId = company.getCompanyId();
 
-			CompanyRegistry.unregister(companyId);
 			VirtualHostRegistry.unregisterVirtualHosts(companyId);
 		}
 
@@ -2587,19 +2547,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		clusterRequest.setFireAndForget(true);
 
 		ClusterExecutorUtil.execute(clusterRequest);
-	}
-
-	private void _updateCompanyRegistry(Company company) {
-		if (!PropsValues.DATABASE_PARTITION_ENABLED) {
-			return;
-		}
-
-		TransactionCallbackUtil.registerCommitCallback(
-			() -> {
-				CompanyRegistry.register(company);
-
-				return null;
-			});
 	}
 
 	private void _updateGroupLanguageIds(
