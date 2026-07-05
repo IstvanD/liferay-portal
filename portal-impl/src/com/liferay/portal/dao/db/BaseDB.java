@@ -24,7 +24,6 @@ import com.liferay.portal.kernel.dao.db.Index;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
 import com.liferay.portal.kernel.dao.db.IndexMetadataFactoryUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.ThrowableCollector;
@@ -1812,8 +1811,7 @@ public abstract class BaseDB implements DB {
 		Connection connection, String tableName) {
 
 		if (!PropsValues.DATABASE_PARTITION_ENABLED ||
-			(CompanyThreadLocal.getNonsystemCompanyId() ==
-				PortalInstancePool.getDefaultCompanyId())) {
+			CompanyThreadLocal.isDefaultCompany()) {
 
 			return false;
 		}

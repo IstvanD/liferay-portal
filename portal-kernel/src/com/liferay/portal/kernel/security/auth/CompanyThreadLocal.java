@@ -106,6 +106,18 @@ public class CompanyThreadLocal {
 		return companyId;
 	}
 
+	public static boolean isDefaultCompany() {
+		long companyId = _companyId.get();
+
+		if ((companyId == CompanyConstants.SYSTEM) ||
+			(companyId == PortalInstancePool.getDefaultCompanyId())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public static boolean isInitializingPortalInstance() {
 		return _initializingPortalInstance.get();
 	}
