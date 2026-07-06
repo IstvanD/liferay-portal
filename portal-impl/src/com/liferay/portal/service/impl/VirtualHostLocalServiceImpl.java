@@ -9,6 +9,7 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.cluster.Clusterable;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.AvailableLocaleException;
 import com.liferay.portal.kernel.exception.CompanyVirtualHostException;
@@ -26,6 +27,7 @@ import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutSetPersistence;
 import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
+import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -188,6 +190,27 @@ public class VirtualHostLocalServiceImpl
 			excludedLayoutSetId, virtualHostNames);
 	}
 
+	@Clusterable
+	@Override
+	@Transactional(enabled = false)
+	public void registerVirtualHost(String hostname, long companyId) {
+		VirtualHostRegistry.register(hostname, companyId);
+	}
+
+	@Clusterable
+	@Override
+	@Transactional(enabled = false)
+	public void unregisterVirtualHost(String hostname) {
+		VirtualHostRegistry.unregister(hostname);
+	}
+
+	@Clusterable
+	@Override
+	@Transactional(enabled = false)
+	public void unregisterVirtualHosts(long companyId) {
+		VirtualHostRegistry.unregisterVirtualHosts(companyId);
+	}
+
 	@Override
 	public List<VirtualHost> updateVirtualHosts(
 		long companyId, long layoutSetId, TreeMap<String, String> hostnames) {
@@ -283,14 +306,15 @@ public class VirtualHostLocalServiceImpl
 		virtualHostPersistence.cacheResult(virtualHosts);
 
 		if (PropsValues.DATABASE_PARTITION_ENABLED) {
-			TransactionCommitCallbackUtil.registerCallback(
+			TransactionCallbackUtil.registerCommitCallback(
 				() -> {
 					for (String removedHostname : removedHostnames) {
-						VirtualHostRegistry.unregister(removedHostname);
+						virtualHostLocalService.unregisterVirtualHost(
+							removedHostname);
 					}
 
 					for (VirtualHost virtualHost : virtualHosts) {
-						VirtualHostRegistry.register(
+						virtualHostLocalService.registerVirtualHost(
 							virtualHost.getHostname(),
 							virtualHost.getCompanyId());
 					}

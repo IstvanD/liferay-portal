@@ -136,7 +136,6 @@ import com.liferay.portal.liveusers.LiveUsers;
 import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
 import com.liferay.portal.service.base.CompanyLocalServiceBaseImpl;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.VirtualHostRegistry;
 
 import jakarta.portlet.PortletException;
 import jakarta.portlet.PortletPreferences;
@@ -1854,7 +1853,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 					company.getCompanyId());
 
 			for (VirtualHost virtualHost : virtualHosts) {
-				VirtualHostRegistry.register(
+				_virtualHostLocalService.registerVirtualHost(
 					virtualHost.getHostname(), virtualHost.getCompanyId());
 			}
 		}
@@ -1893,7 +1892,8 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 	protected void unregisterCompany(Company company) {
 		if (PropsValues.DATABASE_PARTITION_ENABLED) {
-			VirtualHostRegistry.unregisterVirtualHosts(company.getCompanyId());
+			_virtualHostLocalService.unregisterVirtualHosts(
+				company.getCompanyId());
 		}
 
 		PortalInstanceLifecycleManager portalInstanceLifecycleManager =
