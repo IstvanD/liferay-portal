@@ -115,6 +115,40 @@ public class DBPartitionUtil {
 		}
 	}
 
+	public static void copyCompanyToDefaultPartition(long companyId)
+		throws PortalException {
+
+		if (!PropsValues.DATABASE_PARTITION_ENABLED ||
+			(companyId == _defaultCompanyId)) {
+
+			return;
+		}
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_defaultCompanyId)) {
+
+			Connection connection = CurrentConnectionUtil.getConnection(
+				InfrastructureUtil.getDataSource());
+
+			try (Statement statement = connection.createStatement()) {
+				_deleteCompanyData(
+					companyId, "Company", _defaultPartitionName, statement);
+
+				String partitionName = getPartitionName(companyId);
+
+				statement.executeUpdate(
+					_getCopyDataSQL(
+						partitionName, _defaultPartitionName, "Company",
+						_getColumnNames(connection, partitionName, "Company"),
+						" where companyId = " + companyId));
+			}
+		}
+		catch (Exception exception) {
+			throw new PortalException(exception);
+		}
+	}
+
 	public static boolean copyDBPartition(long fromCompanyId, long toCompanyId)
 		throws PortalException {
 
@@ -1451,6 +1485,18 @@ public class DBPartitionUtil {
 				while (resultSet.next()) {
 					String tableName = resultSet.getString("TABLE_NAME");
 
+					if (StringUtil.equalsIgnoreCase(tableName, "Company")) {
+						statement.executeUpdate(
+							_getCopyDataSQL(
+								targetPartitionName, _defaultPartitionName,
+								tableName,
+								_getColumnNames(
+									connection, targetPartitionName, tableName),
+								" where companyId = " + companyId));
+
+						continue;
+					}
+
 					if (!dbInspector.isControlTable(tableName)) {
 						continue;
 					}
@@ -1514,6 +1560,9 @@ public class DBPartitionUtil {
 
 					statement.executeUpdate(renamePartitionSQL);
 				}
+
+				_deleteCompanyData(
+					companyId, "Company", _defaultPartitionName, statement);
 
 				for (String copiedTableName : copiedTableNames) {
 					_exportTable(
