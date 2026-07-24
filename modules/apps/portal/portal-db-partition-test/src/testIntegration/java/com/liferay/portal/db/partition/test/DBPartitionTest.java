@@ -843,9 +843,9 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 						LoggerTestUtil.INFO)) {
 
 					db.updateIndexes(
-						connection, "Company",
+						connection, "Release_",
 						"create index " + TEST_INDEX_NAME +
-							" on Company (userId, companyId);",
+							" on Release_ (buildNumber, servletContextName);",
 						false);
 
 					List<LogEntry> logEntries = logCapture.getLogEntries();
@@ -861,9 +861,9 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 						logEntries.size());
 				}
 				finally {
-					if (dbInspector.hasIndex("Company", TEST_INDEX_NAME)) {
+					if (dbInspector.hasIndex("Release_", TEST_INDEX_NAME)) {
 						db.runSQL(
-							"drop index " + TEST_INDEX_NAME + " on Company");
+							"drop index " + TEST_INDEX_NAME + " on Release_");
 					}
 				}
 			});
