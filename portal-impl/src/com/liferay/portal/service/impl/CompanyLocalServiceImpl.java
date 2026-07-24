@@ -392,6 +392,10 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 				PortalInstances.setImportInProcessCompanyIdWithSafeCloseable(
 					companyId)) {
 
+			if (Validator.isNotNull(webId)) {
+				validateWebId(webId);
+			}
+
 			DBPartitionUtil.importDBPartition(companyId);
 
 			try (SafeCloseable safeCloseable2 =
@@ -439,8 +443,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 						if (Validator.isNotNull(webId) &&
 							!StringUtil.equals(company.getWebId(), webId)) {
-
-							validateWebId(webId);
 
 							company.setWebId(webId);
 
