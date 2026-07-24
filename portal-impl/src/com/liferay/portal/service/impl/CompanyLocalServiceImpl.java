@@ -265,6 +265,8 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 			Company updatedCompany = companyPersistence.update(company);
 
+			_addCompanyToDefaultPartition(updatedCompany);
+
 			User guestUser = _addGuestUser(updatedCompany);
 
 			// Virtual host
@@ -2335,10 +2337,24 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		}
 	}
 
+	private void _addCompanyToDefaultPartition(Company company)
+		throws PortalException {
+
+		if (!PropsValues.DATABASE_PARTITION_ENABLED) {
+			return;
+		}
+
+		companyPersistence.flush();
+
+		DBPartitionUtil.copyCompanyToDefaultPartition(company.getCompanyId());
+	}
+
 	private Company _addDBPartitionCompany(Company company)
 		throws PortalException {
 
 		preregisterCompany(company);
+
+		_addCompanyToDefaultPartition(company);
 
 		_classNameLocalService.checkClassNames();
 
