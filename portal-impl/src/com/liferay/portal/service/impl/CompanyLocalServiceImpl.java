@@ -1197,7 +1197,9 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		company.setMaxUsers(maxUsers);
 		company.setActive(active);
 
-		companyPersistence.update(company);
+		company = companyPersistence.update(company);
+
+		_syncDBPartitionCompany(company);
 
 		// Virtual host
 
@@ -1272,7 +1274,9 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 		CompanyInfo companyInfo = company.getCompanyInfo();
 
-		companyPersistence.update(company);
+		company = companyPersistence.update(company);
+
+		_syncDBPartitionCompany(company);
 
 		company = updateVirtualHostname(companyId, virtualHostname);
 
@@ -2570,6 +2574,35 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		}
 		catch (Throwable throwable) {
 			throw new PortalException(throwable);
+		}
+	}
+
+	private void _syncDBPartitionCompany(Company company) {
+		if (!PropsValues.DATABASE_PARTITION_ENABLED) {
+			return;
+		}
+
+		long companyId = company.getCompanyId();
+
+		if (companyId == PortalInstancePool.getDefaultCompanyId()) {
+			return;
+		}
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
+
+			Company partitionCompany = companyPersistence.fetchByPrimaryKey(
+				companyId);
+
+			if (partitionCompany == null) {
+				return;
+			}
+
+			partitionCompany.setMx(company.getMx());
+			partitionCompany.setMaxUsers(company.getMaxUsers());
+			partitionCompany.setActive(company.isActive());
+
+			companyPersistence.update(partitionCompany);
 		}
 	}
 
