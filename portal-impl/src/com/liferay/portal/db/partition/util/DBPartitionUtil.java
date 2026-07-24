@@ -458,11 +458,24 @@ public class DBPartitionUtil {
 			boolean copyData)
 		throws Exception {
 
+		replaceByTable(
+			connection, companyId, viewName, copyData, StringPool.BLANK);
+	}
+
+	public static void replaceByTable(
+			Connection connection, long companyId, String viewName,
+			boolean copyData, String whereClause)
+		throws Exception {
+
 		if (companyId == _defaultCompanyId) {
 			return;
 		}
 
 		String partitionName = getPartitionName(companyId);
+
+		if (!_hasView(connection, partitionName, viewName)) {
+			return;
+		}
 
 		try (Statement statement = connection.createStatement()) {
 			statement.execute(
@@ -479,7 +492,7 @@ public class DBPartitionUtil {
 						_defaultPartitionName, partitionName, viewName,
 						_getColumnNames(
 							connection, _defaultPartitionName, viewName),
-						StringPool.BLANK));
+						whereClause));
 			}
 		}
 	}
@@ -1437,6 +1450,23 @@ public class DBPartitionUtil {
 		}
 
 		return " where trigger_name like '%@" + companyId + "'";
+	}
+
+	private static boolean _hasView(
+			Connection connection, String partitionName, String viewName)
+		throws Exception {
+
+		DatabaseMetaData databaseMetaData = connection.getMetaData();
+		DBInspector dbInspector = new DBInspector(connection);
+
+		try (ResultSet resultSet = databaseMetaData.getTables(
+				_dbPartitionDB.getCatalog(connection, partitionName),
+				_dbPartitionDB.getSchema(connection, partitionName),
+				dbInspector.normalizeName(viewName, databaseMetaData),
+				new String[] {"VIEW"})) {
+
+			return resultSet.next();
+		}
 	}
 
 	private static void _importDBPartition(
