@@ -971,6 +971,29 @@ public class CompanyLocalServiceDBPartitionTest
 	}
 
 	@Test
+	public void testGetCompanies() throws Exception {
+		int companiesCount = companyLocalService.getCompaniesCount();
+
+		_company1 = CompanyTestUtil.addCompany();
+
+		Assert.assertEquals(
+			companiesCount + 1, companyLocalService.getCompaniesCount());
+
+		List<Company> companies = companyLocalService.getCompanies();
+
+		Assert.assertTrue(
+			companies.toString(),
+			ArrayUtil.contains(
+				ListUtil.toLongArray(companies, Company.COMPANY_ID_ACCESSOR),
+				_company1.getCompanyId()));
+
+		companyLocalService.deleteCompany(_company1);
+
+		Assert.assertEquals(
+			companiesCount, companyLocalService.getCompaniesCount());
+	}
+
+	@Test
 	public void testIsCurrentCompanyRestricted() throws Exception {
 		try (SafeCloseable safeCloseable =
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
