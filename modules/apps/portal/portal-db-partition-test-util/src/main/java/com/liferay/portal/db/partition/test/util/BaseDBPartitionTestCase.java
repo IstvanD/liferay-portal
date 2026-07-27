@@ -140,6 +140,14 @@ public abstract class BaseDBPartitionTestCase {
 							companyId);
 				}
 
+				try (SafeCloseable safeCloseable =
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+							PortalInstancePool.getDefaultCompanyId())) {
+
+					statement.execute(
+						"delete from Company where companyId = " + companyId);
+				}
+
 				PortalInstancePool.remove(companyId);
 			}
 		}
@@ -296,33 +304,26 @@ public abstract class BaseDBPartitionTestCase {
 
 	protected static void insertPartitionRequiredData() throws Exception {
 		for (long companyId : COMPANY_IDS) {
+			_insertCompany(companyId, companyId);
+			_insertCompany(companyId, PortalInstancePool.getDefaultCompanyId());
+
 			try (SafeCloseable safeCloseable =
 					CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId);
-				PreparedStatement preparedStatement1 =
-					connection.prepareStatement(
-						"insert into Company (companyId, mx, webId) values " +
-							"(?, ?, ?)");
-				PreparedStatement preparedStatement2 =
+				PreparedStatement preparedStatement =
 					connection.prepareStatement(
 						StringBundler.concat(
 							"insert into VirtualHost (ctCollectionId, ",
 							"virtualHostId, companyId, layoutSetId, hostname, ",
 							"defaultVirtualHost) values (?, ?, ?, ?, ?, ?)"))) {
 
-				preparedStatement1.setLong(1, companyId);
-				preparedStatement1.setString(2, "liferay.com");
-				preparedStatement1.setString(3, "Test" + companyId);
+				preparedStatement.setLong(1, 0L);
+				preparedStatement.setLong(2, RandomTestUtil.randomLong());
+				preparedStatement.setLong(3, companyId);
+				preparedStatement.setLong(4, 0L);
+				preparedStatement.setString(5, "test" + companyId);
+				preparedStatement.setBoolean(6, true);
 
-				preparedStatement1.executeUpdate();
-
-				preparedStatement2.setLong(1, 0L);
-				preparedStatement2.setLong(2, RandomTestUtil.randomLong());
-				preparedStatement2.setLong(3, companyId);
-				preparedStatement2.setLong(4, 0L);
-				preparedStatement2.setString(5, "test" + companyId);
-				preparedStatement2.setBoolean(6, true);
-
-				preparedStatement2.executeUpdate();
+				preparedStatement.executeUpdate();
 			}
 
 			Company company = new CompanyImpl();
@@ -471,6 +472,24 @@ public abstract class BaseDBPartitionTestCase {
 			ReflectionTestUtil.setFieldValue(
 				CurrentConnectionUtil.class, "_currentConnection",
 				defaultCurrentConnection);
+		}
+	}
+
+	private static void _insertCompany(long companyId, long contextCompanyId)
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					contextCompanyId);
+			PreparedStatement preparedStatement = connection.prepareStatement(
+				"insert into Company (companyId, mx, webId) values (?, ?, " +
+					"?)")) {
+
+			preparedStatement.setLong(1, companyId);
+			preparedStatement.setString(2, "liferay.com");
+			preparedStatement.setString(3, "Test" + companyId);
+
+			preparedStatement.executeUpdate();
 		}
 	}
 
