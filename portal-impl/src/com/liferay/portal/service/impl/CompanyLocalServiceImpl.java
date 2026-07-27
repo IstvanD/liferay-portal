@@ -343,12 +343,14 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			LastSessionRecorderHelperUtil.syncLastSessionState(false);
 		}
 
+		Company addedCompany;
+
 		try (SafeCloseable safeCloseable =
 				CompanyThreadLocal.setRawCompanyIdWithSafeCloseable(
 					companyId)) {
 
 			if (PropsValues.DATABASE_PARTITION_ENABLED) {
-				Company addedCompany = TransactionInvokerUtil.invoke(
+				addedCompany = TransactionInvokerUtil.invoke(
 					_transactionConfig, callable);
 
 				// Commit callbacks must flush before this scope restores the
@@ -356,11 +358,10 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 				// caller's partition
 
 				LastSessionRecorderHelperUtil.syncLastSessionState(false);
-
-				return addedCompany;
 			}
-
-			return callable.call();
+			else {
+				return callable.call();
+			}
 		}
 		catch (Throwable throwable) {
 			if (newDBPartitionAdded) {
@@ -369,6 +370,10 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 			throw new PortalException(throwable);
 		}
+
+		companyPersistence.clearCache();
+
+		return addedCompany;
 	}
 
 	@Override
@@ -397,6 +402,8 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			}
 
 			DBPartitionUtil.importDBPartition(companyId);
+
+			Company registeredCompany;
 
 			try (SafeCloseable safeCloseable2 =
 					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
@@ -452,13 +459,18 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 						return _addDBPartitionCompany(company);
 					});
 
-				return _registerDBPartitionCompany(dbPartitionCompany);
+				registeredCompany = _registerDBPartitionCompany(
+					dbPartitionCompany);
 			}
 			catch (Throwable throwable) {
 				_removeDBPartition(companyId, true);
 
 				throw new PortalException(throwable);
 			}
+
+			companyPersistence.clearCache();
+
+			return registeredCompany;
 		}
 	}
 
@@ -644,6 +656,8 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 			long companyId = toCompanyId;
 
+			Company registeredCompany;
+
 			try (SafeCloseable safeCloseable2 =
 					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 						toCompanyId)) {
@@ -670,13 +684,18 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 						return _addDBPartitionCompany(company);
 					});
 
-				return _registerDBPartitionCompany(dbPartitionCompany);
+				registeredCompany = _registerDBPartitionCompany(
+					dbPartitionCompany);
 			}
 			catch (Throwable throwable) {
 				_removeDBPartition(companyId, false);
 
 				throw new PortalException(throwable);
 			}
+
+			companyPersistence.clearCache();
+
+			return registeredCompany;
 		}
 	}
 
@@ -1670,8 +1689,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 							CompanyThreadLocal.setRawCompanyIdWithSafeCloseable(
 								CompanyConstants.SYSTEM)) {
 
-						EntityCacheUtil.removeResult(
-							company.getClass(), company.getPrimaryKeyObj());
+						companyPersistence.clearCache();
 
 						if (virtualHost != null) {
 							EntityCacheUtil.removeResult(
