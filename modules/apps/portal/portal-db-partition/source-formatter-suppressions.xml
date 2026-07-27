@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<suppressions>
+	<source-check>
+		<suppress checks="JavaCompanyThreadLocalCheck" files="src/main/java/com/liferay/portal/db/partition/internal/messaging/DBPartitionMessageBusInterceptor\.java" />
+	</source-check>
+</suppressions>
