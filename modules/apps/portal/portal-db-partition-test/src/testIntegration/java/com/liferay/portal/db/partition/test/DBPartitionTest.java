@@ -77,6 +77,9 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 	public static void setUpClass() throws Exception {
 		BaseDBPartitionTestCase.setUpClass();
 
+		_safeCloseable = CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+			PortalInstancePool.getDefaultCompanyId());
+
 		createControlTable(TEST_CONTROL_TABLE_NAME);
 
 		BaseDBPartitionTestCase.setUpDBPartitions();
@@ -87,6 +90,10 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 		BaseDBPartitionTestCase.tearDownDBPartitions();
 
 		dropControlTable(TEST_CONTROL_TABLE_NAME);
+
+		if (_safeCloseable != null) {
+			_safeCloseable.close();
+		}
 	}
 
 	@After
@@ -385,21 +392,20 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					COMPANY_IDS[0])) {
 
-			Assert.assertEquals(
-				1, _counterLocalService.increment(getClass().getName()));
-
-			DBPartitionUtil.forEachCompanyId(
-				companyId -> {
-					if (companyId.equals(COMPANY_IDS[0])) {
-						Assert.assertEquals(
-							2, _counterLocalService.increment(_CLASS_NAME));
-					}
-					else {
-						Assert.assertEquals(
-							1, _counterLocalService.increment(_CLASS_NAME));
-					}
-				});
+			Assert.assertEquals(1, _counterLocalService.increment(_CLASS_NAME));
 		}
+
+		DBPartitionUtil.forEachCompanyId(
+			companyId -> {
+				if (companyId.equals(COMPANY_IDS[0])) {
+					Assert.assertEquals(
+						2, _counterLocalService.increment(_CLASS_NAME));
+				}
+				else {
+					Assert.assertEquals(
+						1, _counterLocalService.increment(_CLASS_NAME));
+				}
+			});
 	}
 
 	@Test
@@ -410,21 +416,19 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 
 			Assert.assertEquals(
 				10, _counterLocalService.increment(_CLASS_NAME, 10));
-
-			DBPartitionUtil.forEachCompanyId(
-				companyId -> {
-					if (companyId.equals(COMPANY_IDS[0])) {
-						Assert.assertEquals(
-							20,
-							_counterLocalService.increment(_CLASS_NAME, 10));
-					}
-					else {
-						Assert.assertEquals(
-							10,
-							_counterLocalService.increment(_CLASS_NAME, 10));
-					}
-				});
 		}
+
+		DBPartitionUtil.forEachCompanyId(
+			companyId -> {
+				if (companyId.equals(COMPANY_IDS[0])) {
+					Assert.assertEquals(
+						20, _counterLocalService.increment(_CLASS_NAME, 10));
+				}
+				else {
+					Assert.assertEquals(
+						10, _counterLocalService.increment(_CLASS_NAME, 10));
+				}
+			});
 	}
 
 	@Test
@@ -944,6 +948,8 @@ public class DBPartitionTest extends BaseDBPartitionTestCase {
 	}
 
 	private static final String _CLASS_NAME = DBPartitionTest.class.getName();
+
+	private static SafeCloseable _safeCloseable;
 
 	@Inject
 	private ClassNameLocalService _classNameLocalService;

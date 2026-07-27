@@ -215,6 +215,12 @@ public class DBPartitionUtilTest extends BaseDBPartitionTestCase {
 				_getObjectNames("VIEW", getPartitionName(COMPANY_IDS[0])),
 				_getObjectNames("VIEW", getPartitionName(companyId)));
 
+			String companyTableName = dbInspector.normalizeName("Company");
+
+			Assert.assertTrue(fromTableNames.remove(companyTableName));
+
+			Assert.assertEquals(0, _getCount(companyId, companyTableName));
+
 			for (String fromTableName : fromTableNames) {
 				String toTableName = fromTableName;
 
