@@ -6,17 +6,26 @@
 package com.liferay.layout.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.LayoutSetJavaScriptException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import java.util.NavigableMap;
+
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -61,6 +70,36 @@ public class LayoutSetLocalServiceTest {
 			UnicodePropertiesBuilder.put(
 				"javascript", "</script>"
 			).buildString());
+	}
+
+	@Test
+	public void testUpdateVirtualHostsInvalidatesCachedVirtualHostnames()
+		throws Exception {
+
+		LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
+			_group.getGroupId(), false);
+
+		Assert.assertTrue(MapUtil.isEmpty(layoutSet.getVirtualHostnames()));
+
+		String virtualHostname = StringUtil.toLowerCase(
+			RandomTestUtil.randomString() + StringPool.PERIOD +
+				RandomTestUtil.randomString(3));
+
+		_layoutSetLocalService.updateVirtualHosts(
+			_group.getGroupId(), false,
+			TreeMapBuilder.put(
+				virtualHostname, StringPool.BLANK
+			).build());
+
+		layoutSet = _layoutSetLocalService.getLayoutSet(
+			_group.getGroupId(), false);
+
+		NavigableMap<String, String> virtualHostnames =
+			layoutSet.getVirtualHostnames();
+
+		Assert.assertEquals(
+			virtualHostnames.toString(), 1, virtualHostnames.size());
+		Assert.assertTrue(virtualHostnames.containsKey(virtualHostname));
 	}
 
 	@DeleteAfterTestRun
