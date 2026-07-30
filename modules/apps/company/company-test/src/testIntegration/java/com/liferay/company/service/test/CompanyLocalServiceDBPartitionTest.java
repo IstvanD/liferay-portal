@@ -1152,7 +1152,12 @@ public class CompanyLocalServiceDBPartitionTest
 		Assert.assertEquals(virtualHostname, company.getVirtualHostname());
 		Assert.assertEquals(webId, company.getWebId());
 
-		_virtualHostLocalService.getVirtualHost(virtualHostname);
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					PortalInstancePool.getDefaultCompanyId())) {
+
+			_virtualHostLocalService.getVirtualHost(virtualHostname);
+		}
 	}
 
 	private void _assertCopyDBPartitionCompanyCache(long companyId) {
