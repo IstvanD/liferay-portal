@@ -9,7 +9,6 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.cluster.Clusterable;
@@ -343,7 +342,7 @@ public class VirtualHostLocalServiceImpl
 
 		if (virtualHosts.isEmpty()) {
 			virtualHost = virtualHostPersistence.create(
-				DBPartitionUtil.incrementCounter());
+				counterLocalService.increment());
 
 			virtualHost.setCompanyId(companyId);
 		}
@@ -449,7 +448,7 @@ public class VirtualHostLocalServiceImpl
 						layoutSet.getCompanyId(), curVirtualHostname);
 				}
 
-				long virtualHostId = DBPartitionUtil.incrementCounter();
+				long virtualHostId = counterLocalService.increment();
 
 				virtualHost = virtualHostPersistence.create(virtualHostId);
 
