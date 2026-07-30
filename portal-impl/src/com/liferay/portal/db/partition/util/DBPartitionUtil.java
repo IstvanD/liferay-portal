@@ -465,6 +465,15 @@ public class DBPartitionUtil {
 			boolean copyData)
 		throws Exception {
 
+		replaceByTable(
+			connection, companyId, viewName, copyData, StringPool.BLANK);
+	}
+
+	public static void replaceByTable(
+			Connection connection, long companyId, String viewName,
+			boolean copyData, String whereClause)
+		throws Exception {
+
 		if (companyId == _defaultCompanyId) {
 			return;
 		}
@@ -486,7 +495,7 @@ public class DBPartitionUtil {
 						_defaultPartitionName, partitionName, viewName,
 						_getColumnNames(
 							connection, _defaultPartitionName, viewName),
-						StringPool.BLANK));
+						whereClause));
 			}
 		}
 	}
@@ -699,7 +708,8 @@ public class DBPartitionUtil {
 		String targetPartitionName = getPartitionName(toCompanyId);
 
 		try {
-			_copySchema(connection, sourcePartitionName, targetPartitionName);
+			_copySchema(
+				connection, false, sourcePartitionName, targetPartitionName);
 
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
@@ -888,8 +898,8 @@ public class DBPartitionUtil {
 	}
 
 	private static void _copySchema(
-			Connection connection, String sourcePartitionName,
-			String targetPartitionName)
+			Connection connection, boolean copyVirtualHostData,
+			String sourcePartitionName, String targetPartitionName)
 		throws SQLException {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -926,7 +936,10 @@ public class DBPartitionUtil {
 							targetPartitionName, fromTableName, fromTableName));
 
 					if (StringUtil.equalsIgnoreCase(
-							fromTableName, "Configuration_")) {
+							fromTableName, "Configuration_") ||
+						(!copyVirtualHostData &&
+						 StringUtil.equalsIgnoreCase(
+							 fromTableName, "VirtualHost"))) {
 
 						continue;
 					}
@@ -1127,7 +1140,8 @@ public class DBPartitionUtil {
 
 		try {
 			_copySchema(
-				connection, getPartitionName(companyId), exportedPartitionName);
+				connection, true, getPartitionName(companyId),
+				exportedPartitionName);
 
 			DatabaseMetaData databaseMetaData = connection.getMetaData();
 
