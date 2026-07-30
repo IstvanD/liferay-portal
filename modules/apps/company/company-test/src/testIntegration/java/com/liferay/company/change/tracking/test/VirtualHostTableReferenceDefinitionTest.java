@@ -7,13 +7,20 @@ package com.liferay.company.change.tracking.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.change.tracking.test.util.BaseTableReferenceDefinitionTestCase;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.model.change.tracking.CTModel;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.VirtualHostLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.util.List;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -35,9 +42,21 @@ public class VirtualHostTableReferenceDefinitionTest
 
 	@Override
 	protected CTModel<?> addCTModel() throws Exception {
-		return _virtualHostLocalService.updateVirtualHost(
-			TestPropsValues.getCompanyId(), "localhost");
+		List<VirtualHost> virtualHosts =
+			_virtualHostLocalService.updateVirtualHosts(
+				_layoutSetLocalService.getLayoutSet(group.getGroupId(), false),
+				TreeMapBuilder.put(
+					StringUtil.toLowerCase(
+						RandomTestUtil.randomString() + StringPool.PERIOD +
+							RandomTestUtil.randomString(3)),
+					StringPool.BLANK
+				).build());
+
+		return virtualHosts.get(0);
 	}
+
+	@Inject
+	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Inject
 	private VirtualHostLocalService _virtualHostLocalService;
