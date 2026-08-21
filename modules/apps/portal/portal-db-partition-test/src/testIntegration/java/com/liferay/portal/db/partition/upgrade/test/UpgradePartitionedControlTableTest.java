@@ -131,7 +131,12 @@ public class UpgradePartitionedControlTableTest
 						return;
 					}
 
-					try (Statement statement = connection.createStatement()) {
+					try (Connection partitionConnection =
+							dataSource.getConnection();
+
+						Statement statement =
+							partitionConnection.createStatement()) {
+
 						statement.execute(
 							StringBundler.concat(
 								"create or replace view ", viewName,
