@@ -5,16 +5,13 @@
 
 package com.liferay.portal.db.partition.internal.messaging;
 
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.db.partition.internal.configuration.DBPartitionConfiguration;
-import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.messaging.MessageBusInterceptor;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.scheduler.SchedulerEngine;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
@@ -51,22 +48,17 @@ public class DBPartitionMessageBusInterceptor implements MessageBusInterceptor {
 
 			List<Long> companyIds = new ArrayList<>();
 
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-						PortalInstancePool.getDefaultCompanyId())) {
+			_companyLocalService.forEachCompany(
+				company -> {
+					if (!company.isActive() ||
+						PortalInstances.isCompanyInDeletionProcess(
+							company.getCompanyId())) {
 
-				_companyLocalService.forEachCompany(
-					company -> {
-						if (!company.isActive() ||
-							PortalInstances.isCompanyInDeletionProcess(
-								company.getCompanyId())) {
+						return;
+					}
 
-							return;
-						}
-
-						companyIds.add(company.getCompanyId());
-					});
-			}
+					companyIds.add(company.getCompanyId());
+				});
 
 			message.remove("companyId");
 
