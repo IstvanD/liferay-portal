@@ -242,19 +242,18 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		company.setUserName(StringPool.BLANK);
 		company.setCreateDate(new Date());
 		company.setModifiedDate(new Date());
+		company.setWebId(webId);
+		company.setMx(mx);
+		company.setMaxUsers(maxUsers);
+		company.setActive(active);
 
 		if (webId.equals(PropsValues.COMPANY_DEFAULT_WEB_ID)) {
 			DBPartitionUtil.setDefaultCompanyId(company.getCompanyId());
 		}
 
-		boolean newDBPartitionAdded = DBPartitionUtil.addDBPartition(companyId);
+		boolean newDBPartitionAdded = DBPartitionUtil.addDBPartition(company);
 
 		Callable<Company> callable = () -> {
-			company.setWebId(webId);
-			company.setMx(mx);
-			company.setMaxUsers(maxUsers);
-			company.setActive(active);
-
 			String name = webId;
 
 			if (webId.equals(PropsValues.COMPANY_DEFAULT_WEB_ID)) {
@@ -264,8 +263,6 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			company.setName(name);
 
 			Company updatedCompany = companyPersistence.update(company);
-
-			_addCompanyToDefaultPartition(updatedCompany);
 
 			User guestUser = _addGuestUser(updatedCompany);
 
@@ -401,7 +398,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 				validateWebId(webId);
 			}
 
-			DBPartitionUtil.importDBPartition(companyId);
+			DBPartitionUtil.importDBPartition(companyId, webId);
 
 			Company registeredCompany;
 
@@ -648,11 +645,17 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 		validateWebId(webId);
 
+		Company copiedCompany = fromCompany.cloneWithOriginalValues();
+
+		copiedCompany.setCompanyId(toCompanyId);
+		copiedCompany.setWebId(webId);
+		copiedCompany.setNew(true);
+
 		try (SafeCloseable safeCloseable1 =
 				PortalInstances.setCopyInProcessCompanyIdWithSafeCloseable(
 					fromCompanyId)) {
 
-			DBPartitionUtil.copyDBPartition(fromCompanyId, toCompanyId);
+			DBPartitionUtil.copyDBPartition(copiedCompany, fromCompanyId);
 
 			long companyId = toCompanyId;
 
@@ -665,16 +668,13 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 				Company dbPartitionCompany = TransactionInvokerUtil.invoke(
 					_transactionConfig,
 					() -> {
-						Company company = fromCompany.cloneWithOriginalValues();
+						copiedCompany.setName(name);
 
-						company.setCompanyId(companyId);
-						company.setWebId(webId);
-						company.setName(name);
-						company.setNew(true);
+						CompanyInfo companyInfo =
+							copiedCompany.getCompanyInfo();
 
-						CompanyInfo companyInfo = company.getCompanyInfo();
-
-						company = companyPersistence.update(company);
+						Company company = companyPersistence.update(
+							copiedCompany);
 
 						company = updateVirtualHostname(
 							company.getCompanyId(), lowerCaseVirtualHostname);
@@ -2361,24 +2361,10 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		}
 	}
 
-	private void _addCompanyToDefaultPartition(Company company)
-		throws PortalException {
-
-		if (!PropsValues.DATABASE_PARTITION_ENABLED) {
-			return;
-		}
-
-		companyPersistence.flush();
-
-		DBPartitionUtil.copyCompanyToDefaultPartition(company.getCompanyId());
-	}
-
 	private Company _addDBPartitionCompany(Company company)
 		throws PortalException {
 
 		preregisterCompany(company);
-
-		_addCompanyToDefaultPartition(company);
 
 		_classNameLocalService.checkClassNames();
 

@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.scheduler.SchedulerEngine;
 import com.liferay.portal.kernel.scheduler.StorageType;
 import com.liferay.portal.kernel.scheduler.TimeUnit;
@@ -29,6 +30,7 @@ import com.liferay.portal.kernel.test.rule.CompanyProviderClassTestRule;
 import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.model.impl.CompanyImpl;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -152,8 +154,11 @@ public class DBPartitionUtilTest extends BaseDBPartitionTestCase {
 	@Test
 	@TestInfo("LPS-108239")
 	public void testAddDefaultDBPartition() throws PortalException {
-		Assert.assertFalse(
-			DBPartitionUtil.addDBPartition(portal.getDefaultCompanyId()));
+		Company company = new CompanyImpl();
+
+		company.setCompanyId(portal.getDefaultCompanyId());
+
+		Assert.assertFalse(DBPartitionUtil.addDBPartition(company));
 	}
 
 	@Test
@@ -184,8 +189,13 @@ public class DBPartitionUtilTest extends BaseDBPartitionTestCase {
 				_populateResourcePermissionTable(COMPANY_IDS[0]);
 			}
 
+			Company company = new CompanyImpl();
+
+			company.setCompanyId(companyId);
+			company.setWebId("Test" + companyId);
+
 			Assert.assertTrue(
-				DBPartitionUtil.copyDBPartition(COMPANY_IDS[0], companyId));
+				DBPartitionUtil.copyDBPartition(company, COMPANY_IDS[0]));
 
 			List<String> fromTableNames = _getObjectNames(
 				"TABLE", getPartitionName(COMPANY_IDS[0]));
