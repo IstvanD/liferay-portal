@@ -113,6 +113,8 @@ public class UpgradePartitionedControlTableTest
 		finally {
 			DBPartitionUtil.forEachCompanyId(
 				companyId -> dropTable(TEST_TABLE_NAME));
+
+			dropControlTable(TEST_TABLE_NAME);
 		}
 	}
 
