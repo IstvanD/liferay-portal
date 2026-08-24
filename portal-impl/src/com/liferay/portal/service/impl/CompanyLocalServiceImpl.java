@@ -102,6 +102,7 @@ import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.VirtualHostLocalService;
 import com.liferay.portal.kernel.service.persistence.CompanyInfoPersistence;
+import com.liferay.portal.kernel.service.persistence.CompanyUtil;
 import com.liferay.portal.kernel.service.persistence.ContactPersistence;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutSetPrototypePersistence;
@@ -2329,6 +2330,8 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 	}
 
 	private static void _doSynchronizePortalInstances() {
+		CompanyUtil.clearCache();
+
 		CompanyLocalService companyLocalService =
 			(CompanyLocalService)
 				IdentifiableOSGiServiceUtil.getIdentifiableOSGiService(
