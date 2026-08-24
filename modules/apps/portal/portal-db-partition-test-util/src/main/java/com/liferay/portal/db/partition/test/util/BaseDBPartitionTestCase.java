@@ -104,7 +104,7 @@ public abstract class BaseDBPartitionTestCase {
 				DBInspector.class, "_controlTableNames");
 		}
 
-		_controlTableNames.add(StringUtil.toLowerCase(TEST_CONTROL_TABLE_NAME));
+		_controlTableNames.add(StringUtil.toLowerCase(tableName));
 	}
 
 	protected static void createIndex(String tableName) throws Exception {
