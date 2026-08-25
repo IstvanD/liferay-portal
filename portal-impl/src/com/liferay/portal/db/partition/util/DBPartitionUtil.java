@@ -444,13 +444,24 @@ public class DBPartitionUtil {
 
 		String partitionName = getPartitionName(companyId);
 
-		if (!_hasView(connection, partitionName, viewName)) {
+		boolean hasTable = _hasTable(connection, partitionName, viewName);
+
+		if (hasTable &&
+			(!copyData ||
+			 _hasRows(connection, partitionName, viewName, whereClause))) {
+
 			return;
 		}
 
 		try (Statement statement = connection.createStatement()) {
-			statement.execute(
-				_dbPartitionDB.getDropViewSQL(partitionName, viewName));
+			if (hasTable) {
+				statement.execute(
+					_dbPartitionDB.getDropTableSQL(partitionName, viewName));
+			}
+			else {
+				statement.execute(
+					_dbPartitionDB.getDropViewSQL(partitionName, viewName));
+			}
 
 			statement.execute(
 				_dbPartitionDB.getCreateTableSQL(
@@ -1429,8 +1440,24 @@ public class DBPartitionUtil {
 		return " where trigger_name like '%@" + companyId + "'";
 	}
 
-	private static boolean _hasView(
-			Connection connection, String partitionName, String viewName)
+	private static boolean _hasRows(
+			Connection connection, String partitionName, String tableName,
+			String whereClause)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				StringBundler.concat(
+					"select 1 from ", partitionName, StringPool.PERIOD,
+					tableName, whereClause, " limit 1"));
+
+			ResultSet resultSet = preparedStatement.executeQuery()) {
+
+			return resultSet.next();
+		}
+	}
+
+	private static boolean _hasTable(
+			Connection connection, String partitionName, String tableName)
 		throws Exception {
 
 		DatabaseMetaData databaseMetaData = connection.getMetaData();
@@ -1439,8 +1466,8 @@ public class DBPartitionUtil {
 		try (ResultSet resultSet = databaseMetaData.getTables(
 				_dbPartitionDB.getCatalog(connection, partitionName),
 				_dbPartitionDB.getSchema(connection, partitionName),
-				dbInspector.normalizeName(viewName, databaseMetaData),
-				new String[] {"VIEW"})) {
+				dbInspector.normalizeName(tableName, databaseMetaData),
+				new String[] {"TABLE"})) {
 
 			return resultSet.next();
 		}
