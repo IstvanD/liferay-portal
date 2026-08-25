@@ -53,71 +53,64 @@ public class UpgradeCompanyDBPartitionTest {
 		new LiferayIntegrationTestRule();
 
 	@Test
+	public void testUpgradeRepairsCompanyTable() throws Exception {
+		Assume.assumeTrue(PropsValues.DATABASE_PARTITION_ENABLED);
+
+		long companyId = TestPropsValues.getCompanyId();
+
+		Assert.assertNotEquals(
+			PortalInstancePool.getDefaultCompanyId(), companyId);
+
+		String partitionName = DBPartitionUtil.getPartitionName(companyId);
+
+		try {
+			_executeUpdate("drop table " + partitionName + ".Company");
+
+			_runUpgrade();
+
+			_assertOnlyCompanyRow(companyId);
+
+			_executeUpdate(
+				StringBundler.concat(
+					"delete from ", partitionName,
+					".Company where companyId = ", companyId));
+
+			_runUpgrade();
+
+			_assertOnlyCompanyRow(companyId);
+		}
+		finally {
+			_restoreCompanyTable(companyId);
+		}
+	}
+
+	@Test
 	public void testUpgradeReplacesCompanyView() throws Exception {
 		Assume.assumeTrue(PropsValues.DATABASE_PARTITION_ENABLED);
 
 		long companyId = TestPropsValues.getCompanyId();
 
-		long defaultCompanyId = PortalInstancePool.getDefaultCompanyId();
-
-		Assume.assumeTrue(companyId != defaultCompanyId);
+		Assert.assertNotEquals(
+			PortalInstancePool.getDefaultCompanyId(), companyId);
 
 		String partitionName = DBPartitionUtil.getPartitionName(companyId);
 
-		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-					defaultCompanyId);
-
-			Connection connection = DataAccess.getConnection();
-
-			Statement statement = connection.createStatement()) {
-
-			statement.executeUpdate("drop table " + partitionName + ".Company");
-			statement.executeUpdate(
+		try {
+			_executeUpdate("drop table " + partitionName + ".Company");
+			_executeUpdate(
 				StringBundler.concat(
 					"create or replace view ", partitionName,
 					".Company as select * from ",
-					DBPartitionUtil.getPartitionName(defaultCompanyId),
+					DBPartitionUtil.getPartitionName(
+						PortalInstancePool.getDefaultCompanyId()),
 					".Company"));
-		}
 
-		try {
 			_runUpgrade();
 
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId);
-
-				Connection connection = DataAccess.getConnection();
-
-				PreparedStatement preparedStatement =
-					connection.prepareStatement(
-						"select companyId from Company");
-
-				ResultSet resultSet = preparedStatement.executeQuery()) {
-
-				List<Long> companyIds = new ArrayList<>();
-
-				while (resultSet.next()) {
-					companyIds.add(resultSet.getLong("companyId"));
-				}
-
-				Assert.assertEquals(
-					Collections.singletonList(companyId), companyIds);
-			}
+			_assertOnlyCompanyRow(companyId);
 		}
 		finally {
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
-						defaultCompanyId);
-				Connection connection = DataAccess.getConnection()) {
-
-				DBPartitionUtil.replaceByTable(
-					connection, companyId, "Company", true,
-					" where companyId = " + companyId);
-			}
-
-			EntityCacheUtil.clearCache();
-			FinderCacheUtil.clearCache();
+			_restoreCompanyTable(companyId);
 		}
 	}
 
@@ -140,6 +133,57 @@ public class UpgradeCompanyDBPartitionTest {
 
 		Assert.assertEquals(
 			companiesCount, _companyLocalService.getCompaniesCount());
+	}
+
+	private void _assertOnlyCompanyRow(long companyId) throws Exception {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId);
+
+			Connection connection = DataAccess.getConnection();
+
+			PreparedStatement preparedStatement = connection.prepareStatement(
+				"select companyId from Company");
+
+			ResultSet resultSet = preparedStatement.executeQuery()) {
+
+			List<Long> companyIds = new ArrayList<>();
+
+			while (resultSet.next()) {
+				companyIds.add(resultSet.getLong("companyId"));
+			}
+
+			Assert.assertEquals(
+				Collections.singletonList(companyId), companyIds);
+		}
+	}
+
+	private void _executeUpdate(String sql) throws Exception {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					PortalInstancePool.getDefaultCompanyId());
+
+			Connection connection = DataAccess.getConnection();
+
+			Statement statement = connection.createStatement()) {
+
+			statement.executeUpdate(sql);
+		}
+	}
+
+	private void _restoreCompanyTable(long companyId) throws Exception {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					PortalInstancePool.getDefaultCompanyId());
+
+			Connection connection = DataAccess.getConnection()) {
+
+			DBPartitionUtil.replaceByTable(
+				connection, companyId, "Company", true,
+				" where companyId = " + companyId);
+		}
+
+		EntityCacheUtil.clearCache();
+		FinderCacheUtil.clearCache();
 	}
 
 	private void _runUpgrade() throws Exception {

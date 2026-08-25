@@ -613,6 +613,41 @@ public class DBPartitionUtilTest extends BaseDBPartitionTestCase {
 		Assert.assertEquals(_JOBS_COUNT, _getJobsCount(defaultPartitionName));
 	}
 
+	@Test
+	@TestInfo("LPD-96720")
+	public void testReplaceByTableWithoutCopyData() throws Exception {
+		createControlTable(TEST_CONTROL_TABLE_NAME);
+
+		long companyId = COMPANY_IDS[0];
+
+		String partitionName = getPartitionName(companyId);
+
+		try {
+			db.runSQL(
+				dbPartitionDB.getCreateViewSQL(
+					defaultPartitionName, partitionName,
+					TEST_CONTROL_TABLE_NAME));
+
+			DBPartitionUtil.replaceByTable(
+				connection, companyId, TEST_CONTROL_TABLE_NAME, false);
+
+			db.runSQL(
+				StringBundler.concat(
+					"insert into ", partitionName, StringPool.PERIOD,
+					TEST_CONTROL_TABLE_NAME, " values (",
+					RandomTestUtil.randomLong(), ")"));
+
+			DBPartitionUtil.replaceByTable(
+				connection, companyId, TEST_CONTROL_TABLE_NAME, false);
+
+			Assert.assertEquals(
+				1, _getCount(companyId, TEST_CONTROL_TABLE_NAME));
+		}
+		finally {
+			dropControlTable(TEST_CONTROL_TABLE_NAME);
+		}
+	}
+
 	private void _assertJobMessage(long companyId, String jobName)
 		throws Exception {
 
