@@ -425,16 +425,16 @@ public class DBPartitionUtil {
 	}
 
 	public static void replaceByTable(
-			Connection connection, long companyId, String viewName,
+			Connection connection, long companyId, String tableName,
 			boolean copyData)
 		throws Exception {
 
 		replaceByTable(
-			connection, companyId, viewName, copyData, StringPool.BLANK);
+			connection, companyId, tableName, copyData, StringPool.BLANK);
 	}
 
 	public static void replaceByTable(
-			Connection connection, long companyId, String viewName,
+			Connection connection, long companyId, String tableName,
 			boolean copyData, String whereClause)
 		throws Exception {
 
@@ -444,11 +444,11 @@ public class DBPartitionUtil {
 
 		String partitionName = getPartitionName(companyId);
 
-		boolean hasTable = _hasTable(connection, partitionName, viewName);
+		boolean hasTable = _hasTable(connection, partitionName, tableName);
 
 		if (hasTable &&
 			(!copyData ||
-			 _hasRows(connection, partitionName, viewName, whereClause))) {
+			 _hasRows(connection, partitionName, tableName, whereClause))) {
 
 			return;
 		}
@@ -456,24 +456,24 @@ public class DBPartitionUtil {
 		try (Statement statement = connection.createStatement()) {
 			if (hasTable) {
 				statement.execute(
-					_dbPartitionDB.getDropTableSQL(partitionName, viewName));
+					_dbPartitionDB.getDropTableSQL(partitionName, tableName));
 			}
 			else {
 				statement.execute(
-					_dbPartitionDB.getDropViewSQL(partitionName, viewName));
+					_dbPartitionDB.getDropViewSQL(partitionName, tableName));
 			}
 
 			statement.execute(
 				_dbPartitionDB.getCreateTableSQL(
 					connection, _defaultPartitionName, partitionName,
-					viewName));
+					tableName));
 
 			if (copyData) {
 				statement.executeUpdate(
 					_getCopyDataSQL(
-						_defaultPartitionName, partitionName, viewName,
+						_defaultPartitionName, partitionName, tableName,
 						_getColumnNames(
-							connection, _defaultPartitionName, viewName),
+							connection, _defaultPartitionName, tableName),
 						whereClause));
 			}
 		}
