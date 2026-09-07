@@ -6,16 +6,21 @@
 package com.liferay.portal.upgrade.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.model.ReleaseConstants;
 import com.liferay.portal.kernel.service.ReleaseLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.upgrade.ReleaseManager;
+import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.version.Version;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.PortalUpgradeProcess;
@@ -23,6 +28,8 @@ import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.portal.upgrade.release.SchemaCreator;
 
 import java.sql.Connection;
+
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -35,6 +42,9 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.runtime.ServiceComponentRuntime;
+import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
+import org.osgi.util.promise.Promise;
 
 /**
  * @author Luis Ortiz
@@ -51,6 +61,90 @@ public class ReleaseManagerTest {
 	public void tearDown() throws Exception {
 		if (_serviceRegistration != null) {
 			_serviceRegistration.unregister();
+		}
+	}
+
+	@Test
+	public void testActivateWithFailedSchemaCreation() throws Exception {
+		Class<?> clazz = _releaseManager.getClass();
+
+		ComponentDescriptionDTO componentDescriptionDTO =
+			_serviceComponentRuntime.getComponentDescriptionDTO(
+				FrameworkUtil.getBundle(clazz), clazz.getName());
+
+		Promise<?> promise = _serviceComponentRuntime.disableComponent(
+			componentDescriptionDTO);
+
+		promise.getValue();
+
+		Bundle bundle = FrameworkUtil.getBundle(ReleaseManagerTest.class);
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				clazz.getName(), LoggerTestUtil.ERROR)) {
+
+			_registerFailingSchemaCreator(bundle);
+
+			promise = _serviceComponentRuntime.enableComponent(
+				componentDescriptionDTO);
+
+			promise.getValue();
+
+			BundleContext bundleContext = bundle.getBundleContext();
+
+			ReleaseManager releaseManager = bundleContext.getService(
+				bundleContext.getServiceReference(ReleaseManager.class));
+
+			Assert.assertEquals("failure", releaseManager.getStatus());
+
+			_assertFailedSchemaCreationLogEntry(
+				bundle.getSymbolicName(), logCapture);
+		}
+		finally {
+			_releaseLocalService.deleteRelease(
+				_releaseLocalService.fetchRelease(bundle.getSymbolicName()));
+		}
+	}
+
+	@Test
+	public void testGetStatusWithFailedSchemaCreation() throws Exception {
+		Bundle bundle = FrameworkUtil.getBundle(ReleaseManagerTest.class);
+
+		String bundleSymbolicName = bundle.getSymbolicName();
+
+		Class<?> clazz = _releaseManager.getClass();
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				clazz.getName(), LoggerTestUtil.ERROR)) {
+
+			_registerFailingSchemaCreator(bundle);
+
+			_assertFailedSchemaCreationLogEntry(bundleSymbolicName, logCapture);
+
+			Release release = _releaseLocalService.fetchRelease(
+				bundleSymbolicName);
+
+			try {
+				Assert.assertEquals("0.0.0", release.getSchemaVersion());
+				Assert.assertEquals(
+					ReleaseConstants.STATE_UPGRADE_FAILURE, release.getState());
+
+				Assert.assertEquals("failure", _releaseManager.getStatus());
+				Assert.assertFalse(
+					Validator.isBlank(
+						_releaseManager.getShortStatusMessage(false)));
+
+				String statusMessage = _releaseManager.getStatusMessage(false);
+
+				Assert.assertTrue(
+					statusMessage,
+					statusMessage.contains(
+						StringBundler.concat(
+							"Module ", bundleSymbolicName,
+							" has release state upgrade failure")));
+			}
+			finally {
+				_releaseLocalService.deleteRelease(release);
+			}
 		}
 	}
 
@@ -211,11 +305,54 @@ public class ReleaseManagerTest {
 		}
 	}
 
+	private void _assertFailedSchemaCreationLogEntry(
+		String bundleSymbolicName, LogCapture logCapture) {
+
+		List<LogEntry> logEntries = logCapture.getLogEntries();
+
+		Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+		LogEntry logEntry = logEntries.get(0);
+
+		Assert.assertEquals(
+			"Unable to create the schema for module " + bundleSymbolicName,
+			logEntry.getMessage());
+	}
+
+	private void _registerFailingSchemaCreator(Bundle bundle) {
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		_serviceRegistration = bundleContext.registerService(
+			SchemaCreator.class,
+			new SchemaCreator() {
+
+				@Override
+				public void create() throws UpgradeException {
+					throw new UpgradeException();
+				}
+
+				@Override
+				public String getBundleSymbolicName() {
+					return bundle.getSymbolicName();
+				}
+
+				@Override
+				public String getSchemaVersion() {
+					return "1.0.0";
+				}
+
+			},
+			null);
+	}
+
 	@Inject
 	private ReleaseLocalService _releaseLocalService;
 
 	@Inject
 	private volatile ReleaseManager _releaseManager;
+
+	@Inject
+	private ServiceComponentRuntime _serviceComponentRuntime;
 
 	private ServiceRegistration<?> _serviceRegistration;
 
