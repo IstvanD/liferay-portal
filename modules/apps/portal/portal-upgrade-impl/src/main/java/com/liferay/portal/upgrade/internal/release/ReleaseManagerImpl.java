@@ -8,6 +8,7 @@ package com.liferay.portal.upgrade.internal.release;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
@@ -17,6 +18,7 @@ import com.liferay.portal.kernel.upgrade.ReleaseManager;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.version.Version;
@@ -31,6 +33,7 @@ import com.liferay.portal.upgrade.release.SchemaCreator;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -207,6 +210,12 @@ public class ReleaseManagerImpl implements ReleaseManager {
 			sb.append(StringPool.NEW_LINE);
 		}
 
+		for (Release release : _getFailedReleases()) {
+			sb.append("Module ");
+			sb.append(release.getServletContextName());
+			sb.append(" has release state upgrade failure\n");
+		}
+
 		return sb.toString();
 	}
 
@@ -271,6 +280,21 @@ public class ReleaseManagerImpl implements ReleaseManager {
 		return StringPool.BLANK;
 	}
 
+	private List<Release> _getFailedReleases() {
+		List<Release> failedReleases = new ArrayList<>();
+
+		for (Release release :
+				_releaseLocalService.getReleases(
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+
+			if (release.getState() == ReleaseConstants.STATE_UPGRADE_FAILURE) {
+				failedReleases.add(release);
+			}
+		}
+
+		return failedReleases;
+	}
+
 	private String _getModulePendingUpgradeMessage(
 		String moduleName, String currentSchemaVersion,
 		String finalSchemaVersion) {
@@ -312,6 +336,10 @@ public class ReleaseManagerImpl implements ReleaseManager {
 	}
 
 	private boolean _isPendingModuleUpgrades() {
+		if (ListUtil.isNotEmpty(_getFailedReleases())) {
+			return true;
+		}
+
 		for (String bundleSymbolicName :
 				_upgradeExecutor.getBundleSymbolicNames()) {
 
