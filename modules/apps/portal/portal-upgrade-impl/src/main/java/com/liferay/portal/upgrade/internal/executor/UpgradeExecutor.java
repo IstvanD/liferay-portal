@@ -37,9 +37,11 @@ import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -85,6 +87,8 @@ public class UpgradeExecutor {
 		if (size != 0) {
 			release = executeUpgradeInfos(bundle, upgradeInfosList.get(0));
 		}
+
+		_failedBundleSymbolicNames.remove(bundle.getSymbolicName());
 
 		if (release != null) {
 			String schemaVersion = release.getSchemaVersion();
@@ -151,6 +155,10 @@ public class UpgradeExecutor {
 
 	public Set<String> getBundleSymbolicNames() {
 		return _serviceTrackerMap.keySet();
+	}
+
+	public Set<String> getFailedBundleSymbolicNames() {
+		return _failedBundleSymbolicNames;
 	}
 
 	public List<UpgradeInfo> getUpgradeInfos(String bundleSymbolicName) {
@@ -283,6 +291,8 @@ public class UpgradeExecutor {
 		UpgradeExecutor.class);
 
 	private BundleContext _bundleContext;
+	private final Set<String> _failedBundleSymbolicNames =
+		Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private boolean _portalUpgraded;
 
 	@Reference
@@ -338,6 +348,8 @@ public class UpgradeExecutor {
 				}
 			}
 			catch (Throwable throwable) {
+				_failedBundleSymbolicNames.add(bundleSymbolicName);
+
 				_log.error(
 					"Failed upgrade process for module ".concat(
 						bundleSymbolicName),
@@ -357,6 +369,10 @@ public class UpgradeExecutor {
 		public void removedService(
 			ServiceReference<UpgradeStepRegistrator> serviceReference,
 			UpgradeStepRegistry upgradeStepRegistry) {
+
+			Bundle bundle = serviceReference.getBundle();
+
+			_failedBundleSymbolicNames.remove(bundle.getSymbolicName());
 
 			upgradeStepRegistry.destroy();
 		}
