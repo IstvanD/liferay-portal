@@ -8,7 +8,6 @@ package com.liferay.portal.upgrade.internal.release;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
@@ -18,7 +17,7 @@ import com.liferay.portal.kernel.upgrade.ReleaseManager;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
-import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.version.Version;
@@ -33,10 +32,12 @@ import com.liferay.portal.upgrade.release.SchemaCreator;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -153,10 +154,26 @@ public class ReleaseManagerImpl implements ReleaseManager {
 	private String _checkModules(boolean showUpgradeSteps) {
 		StringBundler sb = new StringBundler();
 
+		Set<String> failedBundleSymbolicNames = new TreeSet<>(
+			_failedBundleSymbolicNames);
+
+		failedBundleSymbolicNames.addAll(
+			_upgradeExecutor.getFailedBundleSymbolicNames());
+
+		for (String bundleSymbolicName : failedBundleSymbolicNames) {
+			sb.append("The upgrade of module ");
+			sb.append(bundleSymbolicName);
+			sb.append(" failed\n");
+		}
+
 		Set<String> bundleSymbolicNames =
 			_upgradeExecutor.getBundleSymbolicNames();
 
 		for (String bundleSymbolicName : bundleSymbolicNames) {
+			if (failedBundleSymbolicNames.contains(bundleSymbolicName)) {
+				continue;
+			}
+
 			String schemaVersionString =
 				ReleaseManagerUtil.getSchemaVersionString(
 					_releaseLocalService.fetchRelease(bundleSymbolicName));
@@ -208,12 +225,6 @@ public class ReleaseManagerImpl implements ReleaseManager {
 			}
 
 			sb.append(StringPool.NEW_LINE);
-		}
-
-		for (Release release : _getFailedReleases()) {
-			sb.append("Module ");
-			sb.append(release.getServletContextName());
-			sb.append(" has release state upgrade failure\n");
 		}
 
 		return sb.toString();
@@ -280,21 +291,6 @@ public class ReleaseManagerImpl implements ReleaseManager {
 		return StringPool.BLANK;
 	}
 
-	private List<Release> _getFailedReleases() {
-		List<Release> failedReleases = new ArrayList<>();
-
-		for (Release release :
-				_releaseLocalService.getReleases(
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
-
-			if (release.getState() == ReleaseConstants.STATE_UPGRADE_FAILURE) {
-				failedReleases.add(release);
-			}
-		}
-
-		return failedReleases;
-	}
-
 	private String _getModulePendingUpgradeMessage(
 		String moduleName, String currentSchemaVersion,
 		String finalSchemaVersion) {
@@ -329,6 +325,17 @@ public class ReleaseManagerImpl implements ReleaseManager {
 		return sb.toString();
 	}
 
+	private boolean _hasFailedModuleUpgrades() {
+		if (SetUtil.isNotEmpty(_failedBundleSymbolicNames) ||
+			SetUtil.isNotEmpty(
+				_upgradeExecutor.getFailedBundleSymbolicNames())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private boolean _hasUnsatisfiedUpgradeComponents() {
 		String result = _systemChecker.check();
 
@@ -336,7 +343,7 @@ public class ReleaseManagerImpl implements ReleaseManager {
 	}
 
 	private boolean _isPendingModuleUpgrades() {
-		if (ListUtil.isNotEmpty(_getFailedReleases())) {
+		if (_hasFailedModuleUpgrades()) {
 			return true;
 		}
 
@@ -355,6 +362,10 @@ public class ReleaseManagerImpl implements ReleaseManager {
 	}
 
 	private boolean _isPendingRequiredModuleUpgrades() {
+		if (_hasFailedModuleUpgrades()) {
+			return true;
+		}
+
 		Set<String> upgradableBundleSymbolicNames =
 			ReleaseManagerUtil.getUpgradableBundleSymbolicNames(
 				_upgradeExecutor.getBundleSymbolicNames(), _releaseLocalService,
@@ -388,6 +399,9 @@ public class ReleaseManagerImpl implements ReleaseManager {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ReleaseManagerImpl.class);
+
+	private final Set<String> _failedBundleSymbolicNames =
+		Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	@Reference
 	private ReleaseLocalService _releaseLocalService;
@@ -432,6 +446,8 @@ public class ReleaseManagerImpl implements ReleaseManager {
 
 					release.setVerified(false);
 					release.setState(ReleaseConstants.STATE_GOOD);
+
+					_failedBundleSymbolicNames.remove(bundleSymbolicName);
 				}
 				catch (Exception exception) {
 					if (release == null) {
@@ -441,9 +457,11 @@ public class ReleaseManagerImpl implements ReleaseManager {
 
 					release.setState(ReleaseConstants.STATE_UPGRADE_FAILURE);
 
+					_failedBundleSymbolicNames.add(bundleSymbolicName);
+
 					_log.error(
-						"Unable to create the schema for module ".concat(
-							bundleSymbolicName),
+						"Unable to create the schema for module " +
+							bundleSymbolicName,
 						exception);
 				}
 				finally {
@@ -464,6 +482,8 @@ public class ReleaseManagerImpl implements ReleaseManager {
 		@Override
 		public void removedService(
 			ServiceReference<SchemaCreator> serviceReference, Release release) {
+
+			_failedBundleSymbolicNames.remove(release.getServletContextName());
 		}
 
 		private SchemaCreatorServiceTrackerCustomizer(
