@@ -17,7 +17,6 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +36,7 @@ import org.osgi.framework.ServiceRegistration;
  * @author István András Dézsi
  */
 @RunWith(Arquillian.class)
-public class UpgradeExecutorTest {
+public class UpgradeOSGiCommandsTest {
 
 	@ClassRule
 	@Rule
@@ -52,35 +51,43 @@ public class UpgradeExecutorTest {
 	}
 
 	@Test
-	public void testExecuteWithFailedRegistration() throws Exception {
-		Bundle bundle = FrameworkUtil.getBundle(UpgradeExecutorTest.class);
+	public void testExecuteAllWithFailedRegistration() throws Exception {
+		Bundle bundle = FrameworkUtil.getBundle(UpgradeOSGiCommandsTest.class);
 
 		String bundleSymbolicName = bundle.getSymbolicName();
 
-		_registerUpgradeStepRegistrator(bundle);
+		Class<?> clazz = _upgradeOSGiCommands.getClass();
 
-		try {
-			Set<String> bundleSymbolicNames = ReflectionTestUtil.invoke(
-				_upgradeExecutor, "getBundleSymbolicNames", new Class<?>[0]);
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				clazz.getName(), LoggerTestUtil.OFF)) {
 
-			Assert.assertTrue(
-				bundleSymbolicNames.toString(),
-				bundleSymbolicNames.contains(bundleSymbolicName));
+			_registerUpgradeStepRegistrator(
+				bundle,
+				registry -> {
+					throw new IllegalStateException();
+				});
+
+			_assertExecuteAll(
+				"The following modules had errors while upgrading:\n\t" +
+					bundleSymbolicName);
+
+			_serviceRegistration.unregister();
+
+			AtomicInteger registerCount = new AtomicInteger();
+
+			_registerUpgradeStepRegistrator(
+				bundle,
+				registry -> {
+					registry.register("0.0.0", "1.0.0", new DummyUpgradeStep());
+
+					if (registerCount.incrementAndGet() == 1) {
+						throw new IllegalStateException();
+					}
+				});
+
+			_assertExecuteAll("All modules were successfully upgraded");
 
 			Set<String> failedBundleSymbolicNames = ReflectionTestUtil.invoke(
-				_upgradeExecutor, "getFailedBundleSymbolicNames",
-				new Class<?>[0]);
-
-			Assert.assertTrue(
-				failedBundleSymbolicNames.toString(),
-				failedBundleSymbolicNames.contains(bundleSymbolicName));
-
-			ReflectionTestUtil.invoke(
-				_upgradeExecutor, "execute",
-				new Class<?>[] {Bundle.class, List.class}, bundle,
-				_getUpgradeInfos(bundleSymbolicName));
-
-			failedBundleSymbolicNames = ReflectionTestUtil.invoke(
 				_upgradeExecutor, "getFailedBundleSymbolicNames",
 				new Class<?>[0]);
 
@@ -99,45 +106,34 @@ public class UpgradeExecutorTest {
 	}
 
 	@Test
-	public void testGetUpgradeInfosWithFailedRegistration() {
-		Bundle bundle = FrameworkUtil.getBundle(UpgradeExecutorTest.class);
+	public void testListWithFailedRegistration() {
+		Bundle bundle = FrameworkUtil.getBundle(UpgradeOSGiCommandsTest.class);
 
-		String bundleSymbolicName = bundle.getSymbolicName();
+		_registerUpgradeStepRegistrator(
+			bundle,
+			registry -> {
+				throw new IllegalStateException();
+			});
 
-		AtomicInteger registerCount = _registerUpgradeStepRegistrator(bundle);
-
-		List<?> upgradeInfos = _getUpgradeInfos(bundleSymbolicName);
-
-		Assert.assertEquals(2, registerCount.get());
-		Assert.assertEquals(upgradeInfos.toString(), 1, upgradeInfos.size());
-
-		Set<String> failedBundleSymbolicNames = ReflectionTestUtil.invoke(
-			_upgradeExecutor, "getFailedBundleSymbolicNames", new Class<?>[0]);
+		String message = ReflectionTestUtil.invoke(
+			_upgradeOSGiCommands, "list", new Class<?>[0]);
 
 		Assert.assertTrue(
-			failedBundleSymbolicNames.toString(),
-			failedBundleSymbolicNames.contains(bundleSymbolicName));
-
-		_serviceRegistration.unregister();
-
-		_serviceRegistration = null;
-
-		failedBundleSymbolicNames = ReflectionTestUtil.invoke(
-			_upgradeExecutor, "getFailedBundleSymbolicNames", new Class<?>[0]);
-
-		Assert.assertFalse(
-			failedBundleSymbolicNames.toString(),
-			failedBundleSymbolicNames.contains(bundleSymbolicName));
+			message,
+			message.contains(
+				"The upgrade of module " + bundle.getSymbolicName() +
+					" failed"));
 	}
 
-	private List<?> _getUpgradeInfos(String bundleSymbolicName) {
-		return ReflectionTestUtil.invoke(
-			_upgradeExecutor, "getUpgradeInfos", new Class<?>[] {String.class},
-			bundleSymbolicName);
+	private void _assertExecuteAll(String expectedMessage) {
+		String message = ReflectionTestUtil.invoke(
+			_upgradeOSGiCommands, "executeAll", new Class<?>[0]);
+
+		Assert.assertTrue(message, message.contains(expectedMessage));
 	}
 
-	private AtomicInteger _registerUpgradeStepRegistrator(Bundle bundle) {
-		AtomicInteger registerCount = new AtomicInteger();
+	private void _registerUpgradeStepRegistrator(
+		Bundle bundle, UpgradeStepRegistrator upgradeStepRegistrator) {
 
 		BundleContext bundleContext = bundle.getBundleContext();
 
@@ -147,18 +143,8 @@ public class UpgradeExecutorTest {
 				clazz.getName(), LoggerTestUtil.OFF)) {
 
 			_serviceRegistration = bundleContext.registerService(
-				UpgradeStepRegistrator.class,
-				registry -> {
-					registry.register("0.0.0", "1.0.0", new DummyUpgradeStep());
-
-					if (registerCount.incrementAndGet() == 1) {
-						throw new IllegalStateException();
-					}
-				},
-				null);
+				UpgradeStepRegistrator.class, upgradeStepRegistrator, null);
 		}
-
-		return registerCount;
 	}
 
 	@Inject
@@ -171,5 +157,11 @@ public class UpgradeExecutorTest {
 		type = Inject.NoType.class
 	)
 	private Object _upgradeExecutor;
+
+	@Inject(
+		filter = "component.name=com.liferay.portal.upgrade.internal.release.osgi.commands.UpgradeOSGiCommands",
+		type = Inject.NoType.class
+	)
+	private Object _upgradeOSGiCommands;
 
 }
