@@ -9733,83 +9733,6 @@ war.path=${app.server.portal.dir}/</echo>
 		</sequential>
 	</macrodef>
 
-	<macrodef name="validate-schemas">
-		<attribute default="upgraded" name="upgraded.db.schema" />
-		<attribute default="fresh" name="fresh.db.schema" />
-
-		<sequential>
-			<if>
-				<not>
-					<available file="${selenium.output.dir.name}" type="dir" />
-				</not>
-				<then>
-					<mkdir dir="${selenium.output.dir.name}" />
-				</then>
-			</if>
-
-			<echo file="validate_db_upgrade_schemas.sh">
-				<![CDATA[
-					#!/bin/bash
-
-					function main {
-						grep -i "CREATE TABLE" "${selenium.output.dir.name}/fresh-@{fresh.db.schema}.sql" | awk '{print $3}' | tr -d '`' > ${selenium.output.dir.name}/tables-fresh.txt
-
-						local upgraded_sql_file="${selenium.output.dir.name}/upgraded-@{upgraded.db.schema}.sql"
-
-						grep -i "CREATE TABLE" "${upgraded_sql_file}" | awk '{print $3}' | tr -d '`' > ${selenium.output.dir.name}/tables-upgraded.txt
-
-						grep -Fxvf ${selenium.output.dir.name}/tables-fresh.txt ${selenium.output.dir.name}/tables-upgraded.txt > ${selenium.output.dir.name}/tables-to-remove.txt
-
-						#
-						# Remove SQL statements for tables that are only present in the upgraded SQL file
-						#
-
-						while read -r table; do
-							sed -i "/^CREATE TABLE \`$table\`/,/ENDCREATE/d" "${upgraded_sql_file}"
-							sed -i "/^CREATE TABLE public.$table/,/^);/d" "${upgraded_sql_file}"
-							sed -i "/^CREATE INDEX.*$TABLE/d" "${upgraded_sql_file}"
-							sed -i "/^CREATE UNIQUE INDEX.*$TABLE/d" "${upgraded_sql_file}"
-							sed -i "/^ALTER TABLE ONLY public\.$table/,/^);/d" "${upgraded_sql_file}"
-							sed -i "/^CREATE RULE update_$table/,/);$/d" "${upgraded_sql_file}"
-							sed -i "/^CREATE RULE delete_$table/,/);$/d" "${upgraded_sql_file}"
-						done < ${selenium.output.dir.name}/tables-to-remove.txt
-
-						diff -B -W250 -y ${selenium.output.dir.name}/upgraded-@{upgraded.db.schema}.sql ${selenium.output.dir.name}/fresh-@{fresh.db.schema}.sql | expand | grep -C5 -E '^.{123} [|><]( |$)' || true
-					}
-
-					main
-				]]>
-			</echo>
-
-			<chmod
-				file="validate_db_upgrade_schemas.sh"
-				perm="a+x"
-			/>
-
-			<exec executable="./validate_db_upgrade_schemas.sh" outputproperty="database.changes.master" />
-
-			<delete failonerror="false" file="${selenium.output.dir.name}/tables-fresh.txt" />
-			<delete failonerror="false" file="${selenium.output.dir.name}/tables-to-remove.txt" />
-			<delete failonerror="false" file="${selenium.output.dir.name}/tables-upgraded.txt" />
-
-			<if>
-				<not>
-					<equals arg1="${database.changes.master}" arg2="" />
-				</not>
-				<then>
-					<echo file="${selenium.output.dir.name}/@{upgraded.db.schema}-@{fresh.db.schema}-validate-db-schemas.txt">
-						Fresh and upgraded schemas differ: ${line.separator}${database.changes.master}
-					</echo>
-				</then>
-				<else>
-					<echo file="${selenium.output.dir.name}/@{upgraded.db.schema}-@{fresh.db.schema}-validate-db-schemas.txt">Database schemas match</echo>
-				</else>
-			</if>
-
-			<delete failonerror="false" file="${project.dir}/validate_db_upgrade_schemas.sh" />
-		</sequential>
-	</macrodef>
-
 	<macrodef name="wait-for-app-server">
 		<attribute name="app.server.bin.dir" />
 		<attribute default="0" name="app.server.bundle.index" />
@@ -17987,10 +17910,6 @@ CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote -Dcom.sun.managemen
 
 			<print-file file.name="${liferay.home}/validateoutput.txt" />
 		</sequential>
-	</target>
-
-	<target name="validate-db-upgrade-schemas">
-		<validate-schemas fresh.db.schema="${fresh.db.schema}" upgraded.db.schema="${upgraded.db.schema}" />
 	</target>
 
 	<target name="wait-for-license-activation">
