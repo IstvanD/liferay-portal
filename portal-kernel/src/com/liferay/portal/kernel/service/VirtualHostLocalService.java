@@ -280,6 +280,10 @@ public interface VirtualHostLocalService
 
 	@Clusterable
 	@Transactional(enabled = false)
+	public void reloadVirtualHosts();
+
+	@Clusterable
+	@Transactional(enabled = false)
 	public void unregisterVirtualHost(String hostname);
 
 	@Clusterable
@@ -318,4 +322,4 @@ public interface VirtualHostLocalService
 		throws E;
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:1797754995
+// LIFERAY-SERVICE-BUILDER-HASH:370789695
