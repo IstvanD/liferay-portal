@@ -32,6 +32,7 @@ import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.PropsValues;
@@ -318,19 +319,33 @@ public class VirtualHostLocalServiceImpl
 		return filteredVirtualHosts;
 	}
 
-	private void _unregisterVirtualHostsOnCommit(List<String> hostnames) {
-		if (!_virtualHostPool.isEnabled()) {
-			return;
-		}
-
-		TransactionCallbackUtil.registerCommitCallback(
+	private void _registerRollbackCallback(List<String> addedHostnames) {
+		TransactionCallbackUtil.registerRollbackCallback(
 			() -> {
-				for (String hostname : hostnames) {
-					virtualHostLocalService.unregisterVirtualHost(hostname);
+				for (String addedHostname : addedHostnames) {
+					virtualHostLocalService.unregisterVirtualHost(
+						addedHostname);
 				}
 
 				return null;
 			});
+	}
+
+	private void _unregisterVirtualHostsOnCommit(List<String> hostnames) {
+		List<String> registeredHostnames =
+			_virtualHostPool.getRegisteredHostnames(hostnames);
+
+		if (!registeredHostnames.isEmpty()) {
+			TransactionCallbackUtil.registerCommitCallback(
+				() -> {
+					for (String registeredHostname : registeredHostnames) {
+						virtualHostLocalService.unregisterVirtualHost(
+							registeredHostname);
+					}
+
+					return null;
+				});
+		}
 	}
 
 	private List<VirtualHost> _updateVirtualHosts(
@@ -367,19 +382,7 @@ public class VirtualHostLocalServiceImpl
 			virtualHostPersistence.findByC_L(
 				layoutSet.getCompanyId(), layoutSet.getLayoutSetId()));
 
-		List<String> reservedHostnames = new ArrayList<>();
-
-		if (_virtualHostPool.isEnabled()) {
-			TransactionCallbackUtil.registerRollbackCallback(
-				() -> {
-					for (String reservedHostname : reservedHostnames) {
-						virtualHostLocalService.unregisterVirtualHost(
-							reservedHostname);
-					}
-
-					return null;
-				});
-		}
+		List<String> addedHostnames = new ArrayList<>();
 
 		boolean first = true;
 
@@ -395,24 +398,17 @@ public class VirtualHostLocalServiceImpl
 			}
 
 			if (virtualHost == null) {
-				if (_virtualHostPool.isEnabled()) {
-					Long virtualHostCompanyId =
-						_virtualHostPool.registerIfAbsent(
-							layoutSet.getCompanyId(), curVirtualHostname);
+				if (_virtualHostPool.registerIfAbsent(
+						layoutSet.getCompanyId(), curVirtualHostname)) {
 
-					if ((virtualHostCompanyId != null) &&
-						(virtualHostCompanyId != layoutSet.getCompanyId())) {
-
-						throw new DuplicateVirtualHostnameException(
-							curVirtualHostname);
+					if (addedHostnames.isEmpty()) {
+						_registerRollbackCallback(addedHostnames);
 					}
 
-					if (virtualHostCompanyId == null) {
-						reservedHostnames.add(curVirtualHostname);
+					addedHostnames.add(curVirtualHostname);
 
-						virtualHostLocalService.registerVirtualHost(
-							layoutSet.getCompanyId(), curVirtualHostname);
-					}
+					virtualHostLocalService.registerVirtualHost(
+						layoutSet.getCompanyId(), curVirtualHostname);
 				}
 
 				long virtualHostId = DBPartitionUtil.incrementCounter();
@@ -509,6 +505,17 @@ public class VirtualHostLocalServiceImpl
 			return GetterUtil.getLong(companyId);
 		}
 
+		public List<String> getRegisteredHostnames(List<String> hostnames) {
+			if (!isEnabled()) {
+				return Collections.emptyList();
+			}
+
+			return ListUtil.filter(
+				hostnames,
+				hostname -> _companyIdsByHostnameMap.containsKey(
+					StringUtil.toLowerCase(hostname)));
+		}
+
 		public boolean isEnabled() {
 			return PropsValues.DATABASE_PARTITION_ENABLED;
 		}
@@ -522,9 +529,23 @@ public class VirtualHostLocalServiceImpl
 				StringUtil.toLowerCase(hostname), companyId);
 		}
 
-		public Long registerIfAbsent(long companyId, String hostname) {
-			return _companyIdsByHostnameMap.putIfAbsent(
+		public boolean registerIfAbsent(long companyId, String hostname) {
+			if (!isEnabled()) {
+				return false;
+			}
+
+			Long virtualHostCompanyId = _companyIdsByHostnameMap.putIfAbsent(
 				StringUtil.toLowerCase(hostname), companyId);
+
+			if (virtualHostCompanyId == null) {
+				return true;
+			}
+
+			if (virtualHostCompanyId != companyId) {
+				throw new DuplicateVirtualHostnameException(hostname);
+			}
+
+			return false;
 		}
 
 		public void reset(Map<String, Long> companyIdsByHostnameMap) {
