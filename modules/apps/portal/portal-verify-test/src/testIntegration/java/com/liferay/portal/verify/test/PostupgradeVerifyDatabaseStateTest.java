@@ -39,6 +39,7 @@ import com.liferay.portal.verify.VerifyException;
 import com.liferay.portal.verify.VerifyProcess;
 import com.liferay.portal.verify.test.util.BaseVerifyProcessTestCase;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -67,7 +68,8 @@ public class PostupgradeVerifyDatabaseStateTest
 
 	@Test
 	public void testVerifyPostupgradeColumns() throws Exception {
-		alterColumnName("UserTracker", "companyId", "companyId_backup LONG");
+		alterColumnName(
+			"UserTracker", "remoteAddr", "remoteAddr_backup VARCHAR(75) null");
 
 		try {
 			_testVerifyMessages(
@@ -76,17 +78,18 @@ public class PostupgradeVerifyDatabaseStateTest
 						"Missing columns were detected for ",
 						getNormalizedName("UserTracker"), " table"),
 					ReleaseConstants.DEFAULT_SERVLET_CONTEXT_NAME,
-					getNormalizedName("companyId")),
+					getNormalizedName("remoteAddr")),
 				_getExpectedMessage(
 					StringBundler.concat(
 						"Stale columns were detected for ",
 						getNormalizedName("UserTracker"), " table"),
 					ReleaseConstants.DEFAULT_SERVLET_CONTEXT_NAME,
-					getNormalizedName("companyId_backup")));
+					getNormalizedName("remoteAddr_backup")));
 		}
 		finally {
 			alterColumnName(
-				"UserTracker", "companyId_backup", "companyId LONG");
+				"UserTracker", "remoteAddr_backup",
+				"remoteAddr VARCHAR(75) null");
 		}
 
 		alterColumnType("Address", "city", "VARCHAR(100)");
@@ -147,6 +150,36 @@ public class PostupgradeVerifyDatabaseStateTest
 					getNormalizedName(indexMetadata.getIndexName())));
 		}
 		finally {
+			addIndex(
+				indexMetadata.getIndexName(), "UserTracker", false,
+				indexMetadata.getColumnNames());
+		}
+
+		dropIndex(indexMetadata.getIndexName(), "UserTracker");
+
+		addIndex(
+			indexMetadata.getIndexName(), "UserTracker", false,
+			ArrayUtil.append(indexMetadata.getColumnNames(), "remoteAddr"));
+
+		try {
+			List<String> columnNames = new ArrayList<>();
+
+			for (String columnName : indexMetadata.getColumnNames()) {
+				columnNames.add(getNormalizedName(columnName));
+			}
+
+			_testVerifyMessages(
+				_getExpectedMessage(
+					StringBundler.concat(
+						"Index ",
+						getNormalizedName(indexMetadata.getIndexName()),
+						" is not defined as ", columnNames, " for ",
+						getNormalizedName("UserTracker"), " table"),
+					ReleaseConstants.DEFAULT_SERVLET_CONTEXT_NAME));
+		}
+		finally {
+			dropIndex(indexMetadata.getIndexName(), "UserTracker");
+
 			addIndex(
 				indexMetadata.getIndexName(), "UserTracker", false,
 				indexMetadata.getColumnNames());
