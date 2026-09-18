@@ -554,9 +554,42 @@ public class PostupgradeVerifyDatabaseState extends VerifyProcess {
 						databaseIndexMetadataMap.get(
 							expectedIndexMetadata.getIndexName());
 
-					if ((databaseIndexMetadata == null) ||
-						(databaseIndexMetadata.isUnique() ==
-							expectedIndexMetadata.isUnique())) {
+					if (databaseIndexMetadata == null) {
+						continue;
+					}
+
+					List<String> expectedIndexColumnNames =
+						TransformUtil.transform(
+							Arrays.asList(
+								expectedIndexMetadata.getColumnNames()),
+							dbInspector::normalizeName);
+
+					if (!expectedIndexColumnNames.equals(
+							TransformUtil.transform(
+								Arrays.asList(
+									databaseIndexMetadata.getColumnNames()),
+								dbInspector::normalizeName))) {
+
+						List<String> messages =
+							errorIndexMessagesMap.computeIfAbsent(
+								tableName, key -> new ArrayList<>());
+
+						messages.add(
+							_getMessage(
+								StringBundler.concat(
+									"Index ",
+									dbInspector.normalizeName(
+										expectedIndexMetadata.getIndexName()),
+									" is not defined as ",
+									expectedIndexColumnNames, " for ",
+									normalizedTableName, " table"),
+								servletContextName));
+
+						continue;
+					}
+
+					if (databaseIndexMetadata.isUnique() ==
+							expectedIndexMetadata.isUnique()) {
 
 						continue;
 					}
