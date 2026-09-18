@@ -189,25 +189,7 @@ public class VirtualHostLocalServiceImpl
 	@Override
 	@Transactional(enabled = false)
 	public void reloadVirtualHosts() {
-		if (!_virtualHostPool.isEnabled()) {
-			return;
-		}
-
-		Map<String, Long> companyIdsByHostnameMap = new HashMap<>();
-
-		_companyLocalService.forEachCompany(
-			company -> {
-				for (VirtualHost virtualHost :
-						virtualHostLocalService.getVirtualHosts(
-							company.getCompanyId())) {
-
-					companyIdsByHostnameMap.put(
-						StringUtil.toLowerCase(virtualHost.getHostname()),
-						virtualHost.getCompanyId());
-				}
-			});
-
-		_virtualHostPool.reset(companyIdsByHostnameMap);
+		_virtualHostPool.reload();
 	}
 
 	@Clusterable
@@ -543,10 +525,24 @@ public class VirtualHostLocalServiceImpl
 			return false;
 		}
 
-		public void reset(Map<String, Long> companyIdsByHostnameMap) {
+		public void reload() {
 			if (!isEnabled()) {
 				return;
 			}
+
+			Map<String, Long> companyIdsByHostnameMap = new HashMap<>();
+
+			_companyLocalService.forEachCompany(
+				company -> {
+					for (VirtualHost virtualHost :
+							virtualHostLocalService.getVirtualHosts(
+								company.getCompanyId())) {
+
+						companyIdsByHostnameMap.put(
+							StringUtil.toLowerCase(virtualHost.getHostname()),
+							virtualHost.getCompanyId());
+					}
+				});
 
 			_companyIdsByHostnameMap = new ConcurrentHashMap<>(
 				companyIdsByHostnameMap);
