@@ -15,11 +15,13 @@ import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -146,13 +148,16 @@ public class UpgradeOSGiCommandsTest {
 			Class<?> upgradeOSGiCommandsClass = _upgradeOSGiCommands.getClass();
 
 			try (LogCapture logCapture1 = LoggerTestUtil.configureLog4JLogger(
-					upgradeExecutorClass.getName(), LoggerTestUtil.OFF);
+					upgradeExecutorClass.getName(), LoggerTestUtil.ERROR);
 				LogCapture logCapture2 = LoggerTestUtil.configureLog4JLogger(
-					upgradeOSGiCommandsClass.getName(), LoggerTestUtil.OFF)) {
+					upgradeOSGiCommandsClass.getName(), LoggerTestUtil.ERROR)) {
 
 				ReflectionTestUtil.invoke(
 					_upgradeOSGiCommands, "execute",
 					new Class<?>[] {String.class}, bundleSymbolicName);
+
+				_assertLogEntries(bundleSymbolicName, logCapture1);
+				_assertLogEntries(bundleSymbolicName, logCapture2);
 			}
 
 			Release release = _releaseLocalService.fetchRelease(
@@ -284,6 +289,20 @@ public class UpgradeOSGiCommandsTest {
 			message,
 			message.contains(
 				"The upgrade of module " + bundleSymbolicName + " failed"));
+	}
+
+	private void _assertLogEntries(
+		String bundleSymbolicName, LogCapture logCapture) {
+
+		List<LogEntry> logEntries = logCapture.getLogEntries();
+
+		Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+		LogEntry logEntry = logEntries.get(0);
+
+		Assert.assertEquals(
+			"The upgrade of module " + bundleSymbolicName + " failed",
+			logEntry.getMessage());
 	}
 
 	private void _assertRecovered(
