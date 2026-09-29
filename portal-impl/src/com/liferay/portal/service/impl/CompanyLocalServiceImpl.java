@@ -163,6 +163,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -1637,7 +1638,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 		preunregisterCompany(company);
 
 		if (PropsValues.DATABASE_PARTITION_ENABLED) {
-			VirtualHost virtualHost = _virtualHostPersistence.fetchByHostname(
+			VirtualHost virtualHost = _virtualHostLocalService.fetchVirtualHost(
 				company.getVirtualHostname());
 
 			TransactionCallbackUtil.registerCommitCallback(
@@ -1941,7 +1942,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 					"Virtual hostname is not a valid IPv6 address");
 			}
 
-			VirtualHost virtualHost = _virtualHostPersistence.fetchByHostname(
+			VirtualHost virtualHost = _virtualHostLocalService.fetchVirtualHost(
 				virtualHostname);
 
 			if (virtualHost == null) {
@@ -1960,14 +1961,8 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			}
 		}
 		else {
-			List<VirtualHost> virtualHosts = _virtualHostPersistence.findByC_L(
-				companyId, 0);
-
-			if (!virtualHosts.isEmpty()) {
-				for (VirtualHost virtualHost : virtualHosts) {
-					_virtualHostPersistence.remove(virtualHost);
-				}
-			}
+			_virtualHostLocalService.updateVirtualHosts(
+				companyId, 0, new TreeMap<>());
 		}
 
 		return companyPersistence.fetchByPrimaryKey(companyId);
