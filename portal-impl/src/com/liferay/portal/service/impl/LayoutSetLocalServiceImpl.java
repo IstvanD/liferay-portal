@@ -550,9 +550,18 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 			}
 		}
 
-		_virtualHostLocalService.updateVirtualHosts(
-			layoutSet.getCompanyId(), layoutSet.getLayoutSetId(),
-			virtualHostnames);
+		try {
+			_virtualHostLocalService.updateVirtualHosts(
+				layoutSet.getCompanyId(), layoutSet.getLayoutSetId(),
+				virtualHostnames);
+		}
+		catch (DuplicateVirtualHostnameException
+					duplicateVirtualHostnameException) {
+
+			throw new LayoutSetVirtualHostException(
+				duplicateVirtualHostnameException.getMessage(),
+				duplicateVirtualHostnameException);
+		}
 
 		return layoutSet;
 	}
