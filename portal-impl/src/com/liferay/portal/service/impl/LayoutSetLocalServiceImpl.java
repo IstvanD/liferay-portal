@@ -141,8 +141,9 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 
 		// Virtual host
 
-		_virtualHostPersistence.removeByC_L(
-			layoutSet.getCompanyId(), layoutSet.getLayoutSetId());
+		_virtualHostLocalService.updateVirtualHosts(
+			layoutSet.getCompanyId(), layoutSet.getLayoutSetId(),
+			new TreeMap<>());
 	}
 
 	@Override
@@ -568,17 +569,11 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 			if (virtualHostsCount > 0) {
 				throw new LayoutSetVirtualHostException();
 			}
-
-			_virtualHostLocalService.updateVirtualHosts(
-				layoutSet.getCompanyId(), layoutSet.getLayoutSetId(),
-				virtualHostnames);
 		}
-		else {
-			_virtualHostPersistence.removeByC_L(
-				layoutSet.getCompanyId(), layoutSet.getLayoutSetId());
 
-			layoutSetPersistence.clearCache(layoutSet);
-		}
+		_virtualHostLocalService.updateVirtualHosts(
+			layoutSet.getCompanyId(), layoutSet.getLayoutSetId(),
+			virtualHostnames);
 
 		return layoutSet;
 	}
