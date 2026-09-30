@@ -318,4 +318,4 @@ public interface VirtualHostLocalService
 		throws E;
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:-1012502989
+// LIFERAY-SERVICE-BUILDER-HASH:1797754995
