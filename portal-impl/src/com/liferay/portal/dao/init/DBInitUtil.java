@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ReleaseConstants;
+import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -88,6 +89,8 @@ public class DBInitUtil {
 			Date currentBuildDate = PortalUpgradeProcess.getCurrentBuildDate(
 				connection);
 
+			StartupHelperUtil.setBuildDateChanged(
+				!DateUtil.equals(currentBuildDate, ReleaseInfo.getBuildDate()));
 			StartupHelperUtil.setNewRelease(
 				(currentBuildDate == null) ? true :
 					currentBuildDate.before(ReleaseInfo.getBuildDate()));

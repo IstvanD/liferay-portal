@@ -367,7 +367,7 @@ public class DBUpgrader {
 			PortalCacheManagerNames.MULTI_VM);
 
 		if (UpgradeProcessUtil.isUpgradeClient() ||
-			StartupHelperUtil.isNewRelease()) {
+			StartupHelperUtil.isBuildDateChanged()) {
 
 			IndexUpdaterUtil.updateAllIndexes();
 		}

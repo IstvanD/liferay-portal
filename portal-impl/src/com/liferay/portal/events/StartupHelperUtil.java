@@ -71,6 +71,10 @@ public class StartupHelperUtil {
 		}
 	}
 
+	public static boolean isBuildDateChanged() {
+		return _buildDateChanged;
+	}
+
 	public static boolean isDBNew() {
 		return _dbNew;
 	}
@@ -106,6 +110,10 @@ public class StartupHelperUtil {
 					"The following patches are installed: " + installedPatches);
 			}
 		}
+	}
+
+	public static void setBuildDateChanged(boolean buildDateChanged) {
+		_buildDateChanged = buildDateChanged;
 	}
 
 	public static void setDBNew(boolean dbNew) {
@@ -252,6 +260,7 @@ public class StartupHelperUtil {
 	private static final Log _log = LogFactoryUtil.getLog(
 		StartupHelperUtil.class);
 
+	private static boolean _buildDateChanged;
 	private static volatile boolean _dbNew;
 	private static final DCLSingleton<Boolean> _dbWarmedSCLSingleton =
 		new DCLSingleton<>();

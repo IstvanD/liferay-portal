@@ -602,7 +602,9 @@ public class MainServlet extends HttpServlet {
 	private void _checkBuildDate() {
 		ReleaseManager releaseManager = _serviceTracker.getService();
 
-		if ((releaseManager == null) || !StartupHelperUtil.isNewRelease()) {
+		if ((releaseManager == null) ||
+			!StartupHelperUtil.isBuildDateChanged()) {
+
 			return;
 		}
 
