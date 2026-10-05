@@ -479,14 +479,21 @@ public class DBResourceUtil {
 				continue;
 			}
 
-			IndexMetadata indexMetadata =
-				IndexMetadataFactoryUtil.createIndexMetadata(line);
+			try {
+				IndexMetadata indexMetadata =
+					IndexMetadataFactoryUtil.createIndexMetadata(line);
 
-			List<IndexMetadata> indexMetadatas =
-				indexMetadatasMap.computeIfAbsent(
-					indexMetadata.getTableName(), key -> new ArrayList<>());
+				List<IndexMetadata> indexMetadatas =
+					indexMetadatasMap.computeIfAbsent(
+						indexMetadata.getTableName(), key -> new ArrayList<>());
 
-			indexMetadatas.add(indexMetadata);
+				indexMetadatas.add(indexMetadata);
+			}
+			catch (IllegalArgumentException illegalArgumentException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(illegalArgumentException);
+				}
+			}
 		}
 
 		return indexMetadatasMap;
