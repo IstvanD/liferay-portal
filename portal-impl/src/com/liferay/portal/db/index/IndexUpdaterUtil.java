@@ -126,22 +126,22 @@ public class IndexUpdaterUtil {
 
 					bundleTracker.open();
 
-					DependencyManagerSyncUtil.registerSyncCallable(
-						() -> {
-							bundleTracker.close();
-
-							_clearProcessedServletContextNames();
-
-							_awaitFuturesTermination();
-
-							loggingTimer.close();
-
-							return null;
-						});
-
 					return null;
 				}),
 			IndexUpdaterUtil.class.getName() + "-BundleTrackerOpener");
+
+		DependencyManagerSyncUtil.registerSyncCallable(
+			() -> {
+				bundleTracker.close();
+
+				_clearProcessedServletContextNames();
+
+				_awaitFuturesTermination();
+
+				loggingTimer.close();
+
+				return null;
+			});
 	}
 
 	public static void updateIndexes(Bundle bundle) {
