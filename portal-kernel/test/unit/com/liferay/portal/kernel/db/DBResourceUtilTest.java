@@ -177,8 +177,13 @@ public class DBResourceUtilTest {
 			url
 		);
 
-		_assertTablesIndexMetadatas(
-			DBResourceUtil.getModuleTablesIndexMetadatas(bundle));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				DBResourceUtil.class.getName(), LoggerTestUtil.WARN)) {
+
+			_assertTablesIndexMetadatas(
+				logCapture,
+				DBResourceUtil.getModuleTablesIndexMetadatas(bundle));
+		}
 	}
 
 	@Test
@@ -275,7 +280,9 @@ public class DBResourceUtilTest {
 	public void testGetPortalTablesIndexMetadatas() throws Exception {
 		try (MockedStatic<StringUtil> stringUtilMockedStatic =
 				Mockito.mockStatic(
-					StringUtil.class, Mockito.CALLS_REAL_METHODS)) {
+					StringUtil.class, Mockito.CALLS_REAL_METHODS);
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				DBResourceUtil.class.getName(), LoggerTestUtil.WARN)) {
 
 			stringUtilMockedStatic.when(
 				() -> StringUtil.read(
@@ -285,7 +292,7 @@ public class DBResourceUtilTest {
 			);
 
 			_assertTablesIndexMetadatas(
-				DBResourceUtil.getPortalTablesIndexMetadatas());
+				logCapture, DBResourceUtil.getPortalTablesIndexMetadatas());
 		}
 	}
 
@@ -336,7 +343,18 @@ public class DBResourceUtilTest {
 	}
 
 	private void _assertTablesIndexMetadatas(
+		LogCapture logCapture,
 		Map<String, List<IndexMetadata>> tablesIndexMetadatas) {
+
+		List<LogEntry> logEntries = logCapture.getLogEntries();
+
+		Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+		LogEntry logEntry = logEntries.get(0);
+
+		Assert.assertEquals(
+			"Unable to find index name start create wrong index",
+			logEntry.getMessage());
 
 		List<IndexMetadata> indexMetadatas = tablesIndexMetadatas.get(
 			"TestTable1");
@@ -398,6 +416,7 @@ public class DBResourceUtilTest {
 		"create index IX_TEST1 on TestTable1 (column1);\n",
 		"create unique index IX_TEST2 on TestTable1 (column2, ",
 		"column3[$COLUMN_LENGTH:75$]);\n\n",
-		"create index IX_TEST3 on TestTable2 (column1);");
+		"create index IX_TEST3 on TestTable2 (column1);\n",
+		"create wrong index");
 
 }
