@@ -399,8 +399,8 @@ public class DBUpgraderTest {
 
 		db.runSQL("create index IX_TEST on Lock_ (createDate)");
 
-		Boolean newRelease = ReflectionTestUtil.getAndSetFieldValue(
-			StartupHelperUtil.class, "_newRelease", false);
+		Boolean buildDateChanged = ReflectionTestUtil.getAndSetFieldValue(
+			StartupHelperUtil.class, "_buildDateChanged", false);
 
 		String upgradeDatabaseAutoRun = PropsUtil.get(
 			PropsKeys.UPGRADE_DATABASE_AUTO_RUN);
@@ -421,7 +421,7 @@ public class DBUpgraderTest {
 			Assert.assertTrue(dbInspector.hasIndex("Lock_", "IX_TEST"));
 
 			ReflectionTestUtil.setFieldValue(
-				StartupHelperUtil.class, "_newRelease", true);
+				StartupHelperUtil.class, "_buildDateChanged", true);
 
 			DBUpgrader.upgradeModules();
 
@@ -432,7 +432,7 @@ public class DBUpgraderTest {
 				PropsKeys.UPGRADE_DATABASE_AUTO_RUN, upgradeDatabaseAutoRun);
 
 			ReflectionTestUtil.setFieldValue(
-				StartupHelperUtil.class, "_newRelease", newRelease);
+				StartupHelperUtil.class, "_buildDateChanged", buildDateChanged);
 
 			_stopUpgrade();
 		}
