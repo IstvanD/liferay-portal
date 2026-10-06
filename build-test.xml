@@ -8369,7 +8369,7 @@ ${docker.start.error}</fail>
 						<equals arg1="${database.type}" arg2="mariadb" />
 					</and>
 					<then>
-						<property name="docker.database.wait.condition">mariadb-admin ping > /dev/null 2>&amp;1</property>
+						<property name="docker.database.wait.condition">mariadb-admin --host=${database.host} --protocol=TCP ping > /dev/null 2>&amp;1</property>
 					</then>
 				</elseif>
 				<elseif>
@@ -8378,7 +8378,7 @@ ${docker.start.error}</fail>
 						<equals arg1="${database.type}" arg2="mysql" />
 					</or>
 					<then>
-						<property name="docker.database.wait.condition">mysqladmin ping > /dev/null 2>&amp;1</property>
+						<property name="docker.database.wait.condition">mysqladmin --host=${database.host} --protocol=TCP ping > /dev/null 2>&amp;1</property>
 					</then>
 				</elseif>
 				<elseif>
