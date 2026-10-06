@@ -15154,7 +15154,7 @@ cluster.link.bind.addr["cluster-link-udp"]=127.0.0.1</echo>
 	<target depends="build-sql-file" name="rebuild-database">
 		<trycatch property="rebuild.database.error">
 			<try>
-				<retry retrycount="2">
+				<retry retrycount="2" retrydelay="10000">
 					<sequential>
 						<if>
 							<equals arg1="${skip.delete.liferay.home}" arg2="true" />
@@ -15182,7 +15182,7 @@ cluster.link.bind.addr["cluster-link-udp"]=127.0.0.1</echo>
 	<target depends="build-sql-file-playwright" name="rebuild-database-playwright">
 		<trycatch property="rebuild.database.error">
 			<try>
-				<retry retrycount="2">
+				<retry retrycount="2" retrydelay="10000">
 					<sequential>
 						<rebuild-database skip.delete.liferay.home="true" />
 					</sequential>
