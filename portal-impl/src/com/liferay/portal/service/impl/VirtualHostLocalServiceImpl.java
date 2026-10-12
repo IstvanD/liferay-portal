@@ -203,52 +203,12 @@ public class VirtualHostLocalServiceImpl
 	public VirtualHost updateVirtualHost(
 		long companyId, String virtualHostname) {
 
-		VirtualHost virtualHost = null;
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					companyId, CTCollectionThreadLocal.getCTCollectionId())) {
 
-		List<VirtualHost> virtualHosts = virtualHostPersistence.findByC_L(
-			companyId, 0);
-
-		if (virtualHosts.isEmpty()) {
-			virtualHost = virtualHostPersistence.create(
-				DBPartitionUtil.incrementCounter());
-
-			virtualHost.setCompanyId(companyId);
+			return _updateVirtualHost(companyId, virtualHostname);
 		}
-		else {
-			virtualHost = virtualHosts.get(0);
-
-			for (int i = 1; i < virtualHosts.size(); i++) {
-				virtualHostPersistence.remove(virtualHosts.get(i));
-			}
-		}
-
-		virtualHost.setHostname(virtualHostname);
-		virtualHost.setDefaultVirtualHost(true);
-		virtualHost.setLanguageId(StringPool.BLANK);
-
-		virtualHost = virtualHostPersistence.update(virtualHost);
-
-		Company company = _companyPersistence.fetchByPrimaryKey(companyId);
-
-		if (company != null) {
-			_companyPersistence.clearCache(company);
-		}
-
-		if (Validator.isNotNull(PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME)) {
-			Group group = _groupPersistence.fetchByC_GK(
-				companyId, PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME);
-
-			if (group != null) {
-				LayoutSet layoutSet = _layoutSetPersistence.fetchByG_P(
-					group.getGroupId(), false);
-
-				if (layoutSet != null) {
-					_layoutSetPersistence.clearCache(layoutSet);
-				}
-			}
-		}
-
-		return virtualHost;
 	}
 
 	@Override
@@ -346,6 +306,75 @@ public class VirtualHostLocalServiceImpl
 					return null;
 				});
 		}
+	}
+
+	private VirtualHost _updateVirtualHost(
+		long companyId, String virtualHostname) {
+
+		VirtualHost virtualHost = null;
+
+		List<VirtualHost> virtualHosts = virtualHostPersistence.findByC_L(
+			companyId, 0);
+
+		if (_virtualHostPool.registerIfAbsent(companyId, virtualHostname)) {
+			_registerRollbackCallback(
+				Collections.singletonList(virtualHostname));
+
+			virtualHostLocalService.registerVirtualHost(
+				companyId, virtualHostname);
+		}
+
+		List<String> removedHostnames = new ArrayList<>();
+
+		for (VirtualHost curVirtualHost : virtualHosts) {
+			if (!virtualHostname.equals(curVirtualHost.getHostname())) {
+				removedHostnames.add(curVirtualHost.getHostname());
+			}
+		}
+
+		if (virtualHosts.isEmpty()) {
+			virtualHost = virtualHostPersistence.create(
+				DBPartitionUtil.incrementCounter());
+
+			virtualHost.setCompanyId(companyId);
+		}
+		else {
+			virtualHost = virtualHosts.get(0);
+
+			for (int i = 1; i < virtualHosts.size(); i++) {
+				virtualHostPersistence.remove(virtualHosts.get(i));
+			}
+		}
+
+		virtualHost.setHostname(virtualHostname);
+		virtualHost.setDefaultVirtualHost(true);
+		virtualHost.setLanguageId(StringPool.BLANK);
+
+		virtualHost = virtualHostPersistence.update(virtualHost);
+
+		_unregisterVirtualHostsOnCommit(removedHostnames);
+
+		Company company = _companyPersistence.fetchByPrimaryKey(companyId);
+
+		if (company != null) {
+			_companyPersistence.clearCache(company);
+		}
+
+		if (Validator.isNotNull(PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME)) {
+			Group group = _groupPersistence.fetchByC_GK(
+				companyId, PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME);
+
+			if (group != null) {
+				LayoutSet layoutSet = _layoutSetPersistence.fetchByG_P(
+					group.getGroupId(), false);
+
+				if (layoutSet != null) {
+					_layoutSetPersistence.clearCache(layoutSet);
+				}
+			}
+		}
+
+		return virtualHost;
 	}
 
 	private List<VirtualHost> _updateVirtualHosts(

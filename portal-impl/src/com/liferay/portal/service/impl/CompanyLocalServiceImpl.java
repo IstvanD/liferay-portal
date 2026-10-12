@@ -1908,7 +1908,17 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 				"Virtual hostname is not a valid IPv6 address");
 		}
 
-		_virtualHostLocalService.updateVirtualHost(companyId, virtualHostname);
+		try {
+			_virtualHostLocalService.updateVirtualHost(
+				companyId, virtualHostname);
+		}
+		catch (DuplicateVirtualHostnameException
+					duplicateVirtualHostnameException) {
+
+			throw new CompanyVirtualHostException(
+				duplicateVirtualHostnameException.getMessage(),
+				duplicateVirtualHostnameException);
+		}
 
 		return companyPersistence.fetchByPrimaryKey(companyId);
 	}
