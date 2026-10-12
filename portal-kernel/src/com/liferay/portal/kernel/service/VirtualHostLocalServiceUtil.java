@@ -299,6 +299,18 @@ public class VirtualHostLocalServiceUtil {
 			excludedLayoutSetId, virtualHostnames);
 	}
 
+	public static void registerVirtualHost(long companyId, String hostname) {
+		getService().registerVirtualHost(companyId, hostname);
+	}
+
+	public static void unregisterVirtualHost(String hostname) {
+		getService().unregisterVirtualHost(hostname);
+	}
+
+	public static void unregisterVirtualHosts(long companyId) {
+		getService().unregisterVirtualHosts(companyId);
+	}
+
 	public static VirtualHost updateVirtualHost(
 		long companyId, String virtualHostname) {
 
@@ -338,4 +350,4 @@ public class VirtualHostLocalServiceUtil {
 	private static volatile VirtualHostLocalService _service;
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:-2101634663
+// LIFERAY-SERVICE-BUILDER-HASH:-253186038

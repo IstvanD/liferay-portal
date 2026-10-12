@@ -333,6 +333,21 @@ public class VirtualHostLocalServiceWrapper
 	}
 
 	@Override
+	public void registerVirtualHost(long companyId, String hostname) {
+		_virtualHostLocalService.registerVirtualHost(companyId, hostname);
+	}
+
+	@Override
+	public void unregisterVirtualHost(String hostname) {
+		_virtualHostLocalService.unregisterVirtualHost(hostname);
+	}
+
+	@Override
+	public void unregisterVirtualHosts(long companyId) {
+		_virtualHostLocalService.unregisterVirtualHosts(companyId);
+	}
+
+	@Override
 	public VirtualHost updateVirtualHost(
 		long companyId, String virtualHostname) {
 
@@ -405,4 +420,4 @@ public class VirtualHostLocalServiceWrapper
 	private VirtualHostLocalService _virtualHostLocalService;
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:-416000748
+// LIFERAY-SERVICE-BUILDER-HASH:1922537780

@@ -8,6 +8,7 @@ package com.liferay.portal.kernel.service;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.change.tracking.CTAware;
+import com.liferay.portal.kernel.cluster.Clusterable;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
@@ -275,6 +276,18 @@ public interface VirtualHostLocalService
 	public long getVirtualHostsCount(
 		long excludedLayoutSetId, String[] virtualHostnames);
 
+	@Clusterable
+	@Transactional(enabled = false)
+	public void registerVirtualHost(long companyId, String hostname);
+
+	@Clusterable
+	@Transactional(enabled = false)
+	public void unregisterVirtualHost(String hostname);
+
+	@Clusterable
+	@Transactional(enabled = false)
+	public void unregisterVirtualHosts(long companyId);
+
 	public VirtualHost updateVirtualHost(
 		long companyId, String virtualHostname);
 
@@ -311,4 +324,4 @@ public interface VirtualHostLocalService
 		throws E;
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:1609843546
+// LIFERAY-SERVICE-BUILDER-HASH:-824868995
