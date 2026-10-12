@@ -163,15 +163,15 @@ public class CompanyServiceWrapper
 	/**
 	 * Returns the company with the virtual host name.
 	 *
-	 * @param virtualHostname the company's virtual host name
+	 * @param virtualHost the company's virtual host name
 	 * @return Returns the company with the virtual host name
 	 */
 	@Override
 	public com.liferay.portal.kernel.model.Company getCompanyByVirtualHost(
-			java.lang.String virtualHostname)
+			java.lang.String virtualHost)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _companyService.getCompanyByVirtualHost(virtualHostname);
+		return _companyService.getCompanyByVirtualHost(virtualHost);
 	}
 
 	/**
@@ -443,4 +443,4 @@ public class CompanyServiceWrapper
 	private CompanyService _companyService;
 
 }
-// LIFERAY-SERVICE-BUILDER-HASH:-1216564989
+// LIFERAY-SERVICE-BUILDER-HASH:-1263371068
