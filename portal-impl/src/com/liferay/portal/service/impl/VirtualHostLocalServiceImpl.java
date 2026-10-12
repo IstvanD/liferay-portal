@@ -262,6 +262,13 @@ public class VirtualHostLocalServiceImpl
 
 			return _updateVirtualHosts(layoutSet, virtualHostnames);
 		}
+		catch (DuplicateVirtualHostnameException
+					duplicateVirtualHostnameException) {
+
+			throw new LayoutSetVirtualHostException(
+				duplicateVirtualHostnameException.getMessage(),
+				duplicateVirtualHostnameException);
+		}
 	}
 
 	private VirtualHost _fetchVirtualHost(String virtualHostname) {
