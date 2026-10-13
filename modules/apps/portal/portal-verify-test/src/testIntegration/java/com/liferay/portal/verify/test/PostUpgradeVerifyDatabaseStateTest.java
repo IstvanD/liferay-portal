@@ -15,6 +15,7 @@ import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -25,6 +26,7 @@ import com.liferay.portal.kernel.db.DBResourceUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.model.ReleaseConstants;
 import com.liferay.portal.kernel.model.ServiceComponent;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ReleaseLocalService;
 import com.liferay.portal.kernel.service.ServiceComponentLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -299,6 +301,27 @@ public class PostUpgradeVerifyDatabaseStateTest
 		finally {
 			bundle.uninstall();
 		}
+	}
+
+	@Test
+	public void testVerifyPostUpgradeMissingDBPartition() throws Exception {
+		Assume.assumeTrue(PropsValues.DATABASE_PARTITION_ENABLED);
+
+		PostUpgradeVerifyDatabaseState postUpgradeVerifyDatabaseState =
+			new PostUpgradeVerifyDatabaseState();
+
+		try (SafeCloseable safeCloseable = CompanyThreadLocal.lock(
+				RandomTestUtil.nextLong())) {
+
+			postUpgradeVerifyDatabaseState.verify();
+		}
+
+		Assert.assertEquals(
+			Collections.emptyList(),
+			postUpgradeVerifyDatabaseState.getErrorMessages());
+		Assert.assertEquals(
+			Collections.emptyList(),
+			postUpgradeVerifyDatabaseState.getWarnMessages());
 	}
 
 	@Test
