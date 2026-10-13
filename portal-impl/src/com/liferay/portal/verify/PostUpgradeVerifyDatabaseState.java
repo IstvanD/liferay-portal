@@ -117,6 +117,12 @@ public class PostUpgradeVerifyDatabaseState extends VerifyProcess {
 
 		databaseViewNames.addAll(dbInspector.getViewNames(null));
 
+		if (PropsValues.DATABASE_PARTITION_ENABLED &&
+			databaseTableNames.isEmpty() && databaseViewNames.isEmpty()) {
+
+			return;
+		}
+
 		Set<String> missingViewNames = _asymmetricDifference(
 			expectedViewNames, databaseViewNames);
 
