@@ -105,6 +105,17 @@ public class ReindexPortalBackgroundTaskExecutor
 			_completeSearchEngineInitializers(
 				companyIds, executionMode, searchEngineInitializers);
 		}
+		catch (Exception exception) {
+			ConcurrentReindexManager concurrentReindexManager =
+				_concurrentReindexManagerSnapshot.get();
+
+			if (concurrentReindexManager != null) {
+				_companyLocalService.forEachCompanyId(
+					concurrentReindexManager::deleteNextIndex, companyIds);
+			}
+
+			throw exception;
+		}
 	}
 
 	private void _completeSearchEngineInitializers(
