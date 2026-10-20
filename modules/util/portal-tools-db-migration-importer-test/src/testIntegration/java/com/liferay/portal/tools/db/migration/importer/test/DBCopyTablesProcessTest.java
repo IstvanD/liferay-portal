@@ -6,6 +6,7 @@
 package com.liferay.portal.tools.db.migration.importer.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.dao.jdbc.postgresql.PostgreSQLJDBCUtil;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -16,12 +17,16 @@ import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactoryUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.db.migration.importer.DBCopyTablesProcess;
 import com.liferay.portal.tools.db.migration.importer.jdbc.AutoBatchPreparedStatementUtil;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -144,6 +149,54 @@ public class DBCopyTablesProcessTest {
 	}
 
 	@Test
+	@TestInfo("LPD-110096")
+	public void testCopyTableWithDifferentColumnNames() throws Exception {
+		_sourceDB.runSQL(
+			"create table TestTable (id INTEGER, sourceOnlyColumn " +
+				"VARCHAR(75), testColumn VARCHAR(75))");
+
+		try (Connection connection = _targetDataSource.getConnection()) {
+			_targetDB.runSQL(
+				connection,
+				"create table TestTable (id INTEGER, targetOnlyColumn " +
+					"VARCHAR(75), testColumn VARCHAR(75))");
+		}
+
+		_insertValues(RandomTestUtil.randomStrings(_TABLE_SIZE));
+
+		_sourceDB.runSQL(
+			"update TestTable set sourceOnlyColumn = '" +
+				RandomTestUtil.randomString() + "'");
+
+		PrintStream printStream = System.out;
+
+		ByteArrayOutputStream byteArrayOutputStream =
+			new ByteArrayOutputStream();
+
+		System.setOut(new PrintStream(byteArrayOutputStream));
+
+		try {
+			_copyTable();
+		}
+		finally {
+			System.setOut(printStream);
+		}
+
+		_assertValues(
+			"targetOnlyColumn", Function.identity(), new Object[_TABLE_SIZE],
+			Function.identity());
+
+		String output = StringUtil.toLowerCase(
+			byteArrayOutputStream.toString());
+
+		Assert.assertTrue(
+			output.contains(
+				StringUtil.toLowerCase(
+					"Skipping column sourceOnlyColumn because target table " +
+						"TestTable does not have it in the default schema")));
+	}
+
+	@Test
 	public void testDateColumn() throws Exception {
 		_testColumnTypeOf(
 			Function.identity(), Function.identity(), "DATE",
@@ -235,8 +288,8 @@ public class DBCopyTablesProcessTest {
 	}
 
 	private void _assertValues(
-			Function<Object, Object> expectedFunction, Object[] expectedValues,
-			Function<Object, Object> getFunction)
+			String columnName, Function<Object, Object> expectedFunction,
+			Object[] expectedValues, Function<Object, Object> getFunction)
 		throws Exception {
 
 		int total = 0;
@@ -244,14 +297,15 @@ public class DBCopyTablesProcessTest {
 		try (Connection connection = _targetDataSource.getConnection();
 
 			PreparedStatement preparedStatement = connection.prepareStatement(
-				"select testColumn from " + _targetTableName +
-					" order by id ASC")) {
+				StringBundler.concat(
+					"select ", columnName, " from ", _targetTableName,
+					" order by id ASC"))) {
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
 					Assert.assertEquals(
 						expectedFunction.apply(expectedValues[total++]),
-						getFunction.apply(resultSet.getObject("testColumn")));
+						getFunction.apply(resultSet.getObject(columnName)));
 				}
 			}
 		}
@@ -345,7 +399,7 @@ public class DBCopyTablesProcessTest {
 
 		_copyTable();
 
-		_assertValues(expectedFunction, values, getFunction);
+		_assertValues("testColumn", expectedFunction, values, getFunction);
 	}
 
 	private static final int _TABLE_SIZE = 5000;
