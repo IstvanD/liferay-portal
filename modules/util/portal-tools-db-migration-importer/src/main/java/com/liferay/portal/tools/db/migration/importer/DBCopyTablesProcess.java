@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -87,22 +86,36 @@ public class DBCopyTablesProcess {
 	private void _copyTable(String sourceTableName, String targetTableName)
 		throws Exception {
 
-		List<String> sourceColumnNames = _sourceColumnNamesMap.get(
-			sourceTableName);
-		List<String> targetColumnNames = _targetColumnNamesMap.get(
-			targetTableName);
+		Map<String, String> targetColumnNamesMap = new TreeMap<>(
+			String.CASE_INSENSITIVE_ORDER);
 
-		if (sourceColumnNames.size() < targetColumnNames.size()) {
-			Set<String> sourceColumnNamesSet = new TreeSet<String>(
-				String.CASE_INSENSITIVE_ORDER) {
+		for (String targetColumnName :
+				_targetColumnNamesMap.get(targetTableName)) {
 
-				{
-					addAll(sourceColumnNames);
-				}
-			};
+			targetColumnNamesMap.put(targetColumnName, targetColumnName);
+		}
 
-			targetColumnNames.removeIf(
-				columnName -> !sourceColumnNamesSet.contains(columnName));
+		List<String> sourceColumnNames = new ArrayList<>();
+		List<String> targetColumnNames = new ArrayList<>();
+
+		for (String sourceColumnName :
+				_sourceColumnNamesMap.get(sourceTableName)) {
+
+			String targetColumnName = targetColumnNamesMap.get(
+				sourceColumnName);
+
+			if (targetColumnName == null) {
+				System.out.println(
+					StringBundler.concat(
+						"Skipping column ", sourceColumnName,
+						" because target table ", targetTableName,
+						" does not have it", _partitionMessage));
+
+				continue;
+			}
+
+			sourceColumnNames.add(sourceColumnName);
+			targetColumnNames.add(targetColumnName);
 		}
 
 		String selectSQL = StringBundler.concat(
