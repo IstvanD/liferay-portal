@@ -17,10 +17,11 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,7 +40,10 @@ public class AutoBatchPreparedStatementUtil {
 	}
 
 	public static void start() throws Exception {
-		_executorService = Executors.newFixedThreadPool(10);
+		_executorService = new ThreadPoolExecutor(
+			_THREAD_POOL_SIZE, _THREAD_POOL_SIZE, 0, TimeUnit.SECONDS,
+			new ArrayBlockingQueue<>(_THREAD_POOL_SIZE),
+			new ThreadPoolExecutor.CallerRunsPolicy());
 	}
 
 	public static void stop() throws Exception {
@@ -47,6 +51,8 @@ public class AutoBatchPreparedStatementUtil {
 
 		_executorService.awaitTermination(10, TimeUnit.SECONDS);
 	}
+
+	private static final int _THREAD_POOL_SIZE = 10;
 
 	private static ExecutorService _executorService;
 
@@ -159,6 +165,9 @@ public class AutoBatchPreparedStatementUtil {
 				exception.printStackTrace(System.err);
 
 				throw new RuntimeException(exception);
+			}
+			finally {
+				_cleanUp(preparedStatement);
 			}
 		}
 
