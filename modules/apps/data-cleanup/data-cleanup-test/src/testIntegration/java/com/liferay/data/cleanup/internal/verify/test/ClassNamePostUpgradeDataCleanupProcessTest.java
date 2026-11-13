@@ -26,14 +26,17 @@ import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.rule.Inject;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
@@ -78,6 +81,66 @@ public class ClassNamePostUpgradeDataCleanupProcessTest
 			ReflectionTestUtil.getFieldValue(dclSingleton, "_singleton");
 
 		Assert.assertFalse(packageNameBundlesMap.isEmpty());
+	}
+
+	@Test
+	public void testCleanUpWithFailingBundle() throws Exception {
+		Bundle bundle = BundleUtil.getBundle(
+			SystemBundleUtil.getBundleContext(),
+			"com.liferay.data.cleanup.impl");
+		AtomicReference<ClassName> classNameAtomicReference =
+			new AtomicReference<>();
+
+		String packageName =
+			"com.liferay.test." + RandomTestUtil.randomString();
+
+		String classNameValue =
+			packageName + StringPool.PERIOD + RandomTestUtil.randomString();
+
+		DCLSingleton<Map<String, List<Bundle>>> dclSingleton =
+			ReflectionTestUtil.getFieldValue(
+				bundle.loadClass(getPostUpgradeDataCleanupProcessClassName()),
+				"_packageNameBundlesMapDCLSingleton");
+		Bundle failingBundle = (Bundle)ProxyUtil.newProxyInstance(
+			Bundle.class.getClassLoader(), new Class<?>[] {Bundle.class},
+			(proxy, method, args) -> {
+				if (Objects.equals(method.getName(), "loadClass")) {
+					throw new NullPointerException();
+				}
+
+				return method.invoke(bundle, args);
+			});
+
+		test(
+			logCapture -> {
+				List<String> messages = logCapture.getMessages();
+
+				Assert.assertTrue(messages.toString(), messages.isEmpty());
+
+				ClassName className = _classNameLocalService.fetchClassName(
+					classNameValue);
+
+				Assert.assertEquals(classNameValue, className.getValue());
+			},
+			() -> {
+				if (classNameAtomicReference.get() != null) {
+					_classNameLocalService.deleteClassName(
+						classNameAtomicReference.get());
+				}
+
+				dclSingleton.destroy(null);
+			},
+			() -> {
+				classNameAtomicReference.set(
+					_classNameLocalService.addClassName(classNameValue));
+
+				Map<String, List<Bundle>> packageNameBundlesMap =
+					ReflectionTestUtil.getFieldValue(
+						dclSingleton, "_singleton");
+
+				packageNameBundlesMap.put(
+					packageName, Collections.singletonList(failingBundle));
+			});
 	}
 
 	@Test
