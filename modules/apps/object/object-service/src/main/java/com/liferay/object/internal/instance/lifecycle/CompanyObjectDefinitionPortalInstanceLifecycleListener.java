@@ -16,7 +16,6 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
-import com.liferay.object.service.persistence.ObjectDefinitionPersistence;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
@@ -24,6 +23,8 @@ import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.jdbc.CurrentConnection;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassNameTable;
@@ -114,10 +115,16 @@ public class CompanyObjectDefinitionPortalInstanceLifecycleListener
 	public void portalInstancePreunregistered(Company company)
 		throws Exception {
 
-		for (ObjectDefinition objectDefinition :
-				_objectDefinitionPersistence.findByCompanyId(
-					company.getCompanyId())) {
+		DynamicQuery dynamicQuery =
+			_objectDefinitionLocalService.dynamicQuery();
 
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq("companyId", company.getCompanyId()));
+
+		List<ObjectDefinition> companyObjectDefinitions =
+			_objectDefinitionLocalService.dynamicQuery(dynamicQuery);
+
+		for (ObjectDefinition objectDefinition : companyObjectDefinitions) {
 			ObjectDefinitionTreeUtil.removeRootObjectDefinitionIds(
 				objectDefinition);
 		}
@@ -316,9 +323,6 @@ public class CompanyObjectDefinitionPortalInstanceLifecycleListener
 
 	@Reference
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
-
-	@Reference
-	private ObjectDefinitionPersistence _objectDefinitionPersistence;
 
 	@Reference
 	private ObjectFieldLocalService _objectFieldLocalService;
