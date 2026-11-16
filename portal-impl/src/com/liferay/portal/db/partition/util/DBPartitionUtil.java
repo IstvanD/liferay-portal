@@ -32,6 +32,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.module.framework.ThrowableCollector;
@@ -41,6 +42,7 @@ import com.liferay.portal.kernel.scheduler.SchedulerException;
 import com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse;
 import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.ReleaseLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
@@ -48,6 +50,7 @@ import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.spring.hibernate.DialectUtil;
 
 import java.sql.CallableStatement;
@@ -768,6 +771,40 @@ public class DBPartitionUtil {
 			throw new IllegalArgumentException(
 				"Unable to insert the database partition " +
 					sourcePartitionName + " because it does not exist");
+		}
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select servletContextName, schemaVersion from " +
+					sourcePartitionName + ".Release_");
+
+			ResultSet resultSet = preparedStatement.executeQuery()) {
+
+			while (resultSet.next()) {
+				String servletContextName = resultSet.getString(
+					"servletContextName");
+
+				Release release = ReleaseLocalServiceUtil.fetchRelease(
+					servletContextName);
+
+				if (release == null) {
+					continue;
+				}
+
+				Version exportedSchemaVersion = Version.parseVersion(
+					resultSet.getString("schemaVersion"));
+				Version schemaVersion = Version.parseVersion(
+					release.getSchemaVersion());
+
+				if (!exportedSchemaVersion.equals(schemaVersion)) {
+					throw new IllegalArgumentException(
+						StringBundler.concat(
+							"Unable to insert the database partition ",
+							sourcePartitionName, " because module ",
+							servletContextName, " has schema version ",
+							exportedSchemaVersion, " instead of ",
+							schemaVersion));
+				}
+			}
 		}
 	}
 
