@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceWrapper;
 import com.liferay.portal.kernel.dao.jdbc.util.ConnectionWrapper;
 import com.liferay.portal.kernel.dao.jdbc.util.StatementWrapper;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.CompanyVirtualHostException;
 import com.liferay.portal.kernel.exception.CompanyWebIdException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -63,9 +64,11 @@ import java.sql.Statement;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
@@ -773,6 +776,8 @@ public class DBPartitionUtil {
 					sourcePartitionName + " because it does not exist");
 		}
 
+		Set<String> servletContextNames = new HashSet<>();
+
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select servletContextName, schemaVersion from " +
 					sourcePartitionName + ".Release_");
@@ -782,6 +787,8 @@ public class DBPartitionUtil {
 			while (resultSet.next()) {
 				String servletContextName = resultSet.getString(
 					"servletContextName");
+
+				servletContextNames.add(servletContextName);
 
 				Release release = ReleaseLocalServiceUtil.fetchRelease(
 					servletContextName);
@@ -804,6 +811,24 @@ public class DBPartitionUtil {
 							exportedSchemaVersion, " instead of ",
 							schemaVersion));
 				}
+			}
+		}
+
+		for (Release release :
+				ReleaseLocalServiceUtil.getReleases(
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+
+			String servletContextName = release.getServletContextName();
+
+			if (servletContextName.endsWith(".service") &&
+				!servletContextNames.contains(servletContextName)) {
+
+				throw new IllegalArgumentException(
+					StringBundler.concat(
+						"Unable to insert the database partition ",
+						sourcePartitionName,
+						" because it does not have module ",
+						servletContextName));
 			}
 		}
 	}
