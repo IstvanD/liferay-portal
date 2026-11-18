@@ -364,6 +364,14 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 					virtualHost.getLayoutSetId());
 		}
 
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.isOmniadmin() &&
+			(virtualHost.getCompanyId() != permissionChecker.getCompanyId())) {
+
+			throw new PrincipalException();
+		}
+
 		return companyPersistence.findByPrimaryKey(virtualHost.getCompanyId());
 	}
 
@@ -375,7 +383,17 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 	 */
 	@Override
 	public Company getCompanyByWebId(String webId) throws PortalException {
-		return companyPersistence.findByWebId(webId);
+		Company company = companyPersistence.findByWebId(webId);
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.isOmniadmin() &&
+			(company.getCompanyId() != permissionChecker.getCompanyId())) {
+
+			throw new PrincipalException();
+		}
+
+		return company;
 	}
 
 	/**
