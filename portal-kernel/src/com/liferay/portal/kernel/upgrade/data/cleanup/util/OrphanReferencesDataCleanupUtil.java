@@ -30,7 +30,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -109,6 +111,18 @@ public class OrphanReferencesDataCleanupUtil {
 
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
+			Map<Object, Long> counts = new LinkedHashMap<>();
+
+			while (resultSet.next()) {
+				counts.put(
+					resultSet.getObject(sourceColumnName),
+					resultSet.getLong("count"));
+			}
+
+			if (counts.isEmpty()) {
+				return;
+			}
+
 			if (!readOnly) {
 				_executeDelete(
 					connection,
@@ -124,12 +138,11 @@ public class OrphanReferencesDataCleanupUtil {
 				return;
 			}
 
-			while (resultSet.next()) {
+			for (Map.Entry<Object, Long> entry : counts.entrySet()) {
 				DataCleanupLoggingUtil.logDelete(
-					_log, resultSet.getLong("count"), readOnly, sourceTableName,
+					_log, entry.getValue(), readOnly, sourceTableName,
 					StringBundler.concat(
-						sourceColumnName, StringPool.SPACE,
-						resultSet.getObject(sourceColumnName),
+						sourceColumnName, StringPool.SPACE, entry.getKey(),
 						" was not found in column",
 						(targetColumnNames.length > 1) ? "s " : " ",
 						String.join(", ", targetColumnNames), " from table ",
