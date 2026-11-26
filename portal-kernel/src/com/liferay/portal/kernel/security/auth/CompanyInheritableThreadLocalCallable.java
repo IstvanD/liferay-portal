@@ -20,6 +20,7 @@ public class CompanyInheritableThreadLocalCallable<T> implements Callable<T> {
 		_callable = callable;
 
 		_companyId = CompanyThreadLocal.getCompanyId();
+		_locked = CompanyThreadLocal.isLocked();
 	}
 
 	@Override
@@ -27,8 +28,9 @@ public class CompanyInheritableThreadLocalCallable<T> implements Callable<T> {
 		SafeCloseable safeCloseable = null;
 
 		try {
-			if ((_companyId == CompanyConstants.SYSTEM) ||
-				(_companyId == PortalInstancePool.getDefaultCompanyId())) {
+			if (!_locked &&
+				((_companyId == CompanyConstants.SYSTEM) ||
+				 (_companyId == PortalInstancePool.getDefaultCompanyId()))) {
 
 				safeCloseable =
 					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
@@ -49,5 +51,6 @@ public class CompanyInheritableThreadLocalCallable<T> implements Callable<T> {
 
 	private final Callable<T> _callable;
 	private final Long _companyId;
+	private final boolean _locked;
 
 }
