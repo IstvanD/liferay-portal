@@ -9,6 +9,7 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.CompanyConstants;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,14 +25,19 @@ public class CompanyInheritableThreadLocalCallableTest {
 
 	@Before
 	public void setUp() {
-		MockedStatic<PortalInstancePool> portalInstancePoolMockedStatic =
-			Mockito.mockStatic(PortalInstancePool.class);
+		_portalInstancePoolMockedStatic = Mockito.mockStatic(
+			PortalInstancePool.class);
 
-		portalInstancePoolMockedStatic.when(
+		_portalInstancePoolMockedStatic.when(
 			PortalInstancePool::getDefaultCompanyId
 		).thenReturn(
 			1L
 		);
+	}
+
+	@After
+	public void tearDown() {
+		_portalInstancePoolMockedStatic.close();
 	}
 
 	@Test
@@ -39,6 +45,20 @@ public class CompanyInheritableThreadLocalCallableTest {
 		_test(1L, false);
 		_test(2L, true);
 		_test(CompanyConstants.SYSTEM, false);
+	}
+
+	@Test
+	public void testCall() throws Exception {
+		try (SafeCloseable safeCloseable1 = CompanyThreadLocal.lock(1)) {
+			CompanyInheritableThreadLocalCallable<Boolean>
+				companyInheritableThreadLocalCallable =
+					new CompanyInheritableThreadLocalCallable<>(
+						CompanyThreadLocal::isLocked);
+
+			try (SafeCloseable safeCloseable2 = CompanyThreadLocal.unlock()) {
+				Assert.assertTrue(companyInheritableThreadLocalCallable.call());
+			}
+		}
 	}
 
 	private void _test(Long companyId, boolean locked) throws Exception {
@@ -58,5 +78,7 @@ public class CompanyInheritableThreadLocalCallableTest {
 				).call());
 		}
 	}
+
+	private MockedStatic<PortalInstancePool> _portalInstancePoolMockedStatic;
 
 }
